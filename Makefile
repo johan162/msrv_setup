@@ -190,7 +190,7 @@ chunk: $(CHUNK_DIR)
 
 # Generate PDF
 .PHONY: pdf
-pdf: $(PDF_DIR) $(TMP_DIR)
+pdf: $(PDF_DIR)
 	@echo "Generating PDF..."
 	@# Prepare temporary directory with subdirectories
 	@mkdir -p $(TMP_DIR)/figures $(TMP_DIR)/src $(TMP_DIR)/sections $(TMP_DIR)/appendixes
@@ -224,16 +224,28 @@ epub: $(EPUB_DIR)
 		echo "On some systems this is part of the docbook-utils package."; \
 		exit 1; \
 	fi
-	@# Generate EPUB
-	$(DBTOEPUB) -s $(XSL_DIR)/epub.xsl \
-		-c $(CSS_STYLE) \
+	@# Expand XIncludes and copy necessary files to tmp directory
+	@echo "  Expanding XIncludes and preparing temporary directory..."
+	@mkdir -p $(TMP_DIR)/sections $(TMP_DIR)/appendixes $(TMP_DIR)/figures
+	@# Expand XIncludes into a single file
+	@$(XMLLINT) --xinclude --output $(TMP_DIR)/$(MAIN_DOCUMENT) $(MAIN_DOCUMENT)
+	@# Copy figures directory
+	@cp -rf figures/* $(TMP_DIR)/figures/ 2>/dev/null || true
+	@# Copy XSL and CSS to tmp
+	@cp -rf $(XSL_DIR) $(TMP_DIR)/ 2>/dev/null || true
+	@cp -rf css_stylesheets $(TMP_DIR)/ 2>/dev/null || true
+	@# Now run dbtoepub from the tmp directory where all paths are relative
+	@cd $(TMP_DIR) && $(DBTOEPUB) -s xsl_stylesheets/epub.xsl \
+		-c css_stylesheets/article.css \
 		$(MAIN_DOCUMENT) \
-		-o $(EPUB_DIR)/$(MAIN_DOCUMENT_STRIP).epub
+		-o ../$(EPUB_DIR)/$(MAIN_DOCUMENT_STRIP).epub
+	@# Clean up temporary directory
+	@rm -rf $(TMP_DIR)
 	@echo "EPUB documentation generated in $(EPUB_DIR)/$(MAIN_DOCUMENT_STRIP).epub"
 
 # Generate Markdown
 .PHONY: markdown
-markdown: $(MARKDOWN_DIR) $(TMP_DIR)
+markdown: $(MARKDOWN_DIR)
 	@echo "Generating Markdown..."
 	@# Check if pandoc is available
 	@if ! command -v $(PANDOC) >/dev/null 2>&1; then \
@@ -242,7 +254,8 @@ markdown: $(MARKDOWN_DIR) $(TMP_DIR)
 		echo "On Linux: apt-get install pandoc or dnf install pandoc"; \
 		exit 1; \
 	fi
-	@# Expand XIncludes first using xmllint
+	@# Create temporary directory and expand XIncludes
+	@mkdir -p $(TMP_DIR)
 	@$(XMLLINT) --xinclude --output $(TMP_DIR)/$(MAIN_DOCUMENT) $(MAIN_DOCUMENT)
 	@# Copy figures to tmp for relative path resolution
 	@mkdir -p $(TMP_DIR)/figures
