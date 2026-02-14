@@ -95,7 +95,7 @@ The container includes all necessary dependencies:
 
 ## What This Document Covers
 
-The tutorial walks through setting up a complete mail server stack consisting of 11 detailed sections:
+The tutorial walks through setting up a complete mail server stack consisting of 13 detailed sections:
 
 1. **Introduction** - Why run your own mail server and when it makes sense
 2. **Component Overview** - Understanding the ecosystem of mail server software
@@ -108,8 +108,10 @@ The tutorial walks through setting up a complete mail server stack consisting of
 9. **Procmail** - Mail filtering and automated processing
 10. **Roundcube** - Web-based mail client
 11. **References and Resources** - Where to find more information
+12. **System Maintenance and Backup** - Log rotation, disk monitoring, queue management, backup strategies, certificate renewal, and security updates
+13. **Firewall Configuration and Network Security** - Port requirements, firewall setup (SuSEfirewall2/firewalld), Fail2ban, and security hardening
 
-The document also includes 6 comprehensive appendices with complete configuration file examples for Postfix, Procmail, Dovecot, OpenSSL, and Apache.
+The document also includes 8 comprehensive appendices with complete configuration file examples, troubleshooting guides, and quick reference materials for Postfix, Procmail, Dovecot, OpenSSL, and Apache.
 
 ## The Gap This Document Filled
 
@@ -296,14 +298,18 @@ Generated documentation appears in the `output/` directory:
 │   ├── section08.xml                  # SpamAssassin
 │   ├── section09.xml                  # Procmail
 │   ├── section10.xml                  # Roundcube Webmail
-│   └── section11.xml                  # References
+│   ├── section11.xml                  # References
+│   ├── section12.xml                  # System Maintenance and Backup
+│   └── section13.xml                  # Firewall Configuration
 ├── appendixes/                        # Configuration appendixes
 │   ├── appendix01-postfix-examples.xml    # Postfix examples
 │   ├── appendix02-procmail.xml            # Procmail configuration
 │   ├── appendix03-dovecot.xml             # Dovecot configuration
 │   ├── appendix04-postfix-complete.xml    # Complete postfix config
 │   ├── appendix05-openssl.xml             # OpenSSL examples
-│   └── appendix06-apache.xml              # Apache configuration
+│   ├── appendix06-apache.xml              # Apache configuration
+│   ├── appendix07-troubleshooting.xml     # Troubleshooting guide
+│   └── appendix08-quickref.xml            # Quick reference
 ├── xsl_stylesheets/                   # Custom XSL transformations
 │   ├── html.xsl                       # HTML output customization
 │   ├── chunk.xsl                      # Chunked HTML customization
