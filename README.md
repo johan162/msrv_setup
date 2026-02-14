@@ -2,7 +2,7 @@
 
 **A comprehensive guide to setting up a full-featured IMAP/SMTP/HTTPS/Webmail server**
 
-> **Archival Notice**: This project is being preserved as a historical reference and educational resource. It was originally created in 2011-2012 and represents the state of mail server configuration at that time. While the fundamental concepts remain relevant, specific software versions, configuration syntax, and security best practices have evolved. This repository is **not actively maintained** and should be used primarily as a learning resource or historical reference.
+> **Archival Notice**: This project is being preserved as a historical reference and educational resource. It was originally created in 2010-2012 and represents the state of mail server configuration at that time. While the fundamental concepts remain relevant, specific software versions, configuration syntax, and security best practices have evolved. This repository is **not actively maintained** and should be used primarily as a learning resource or historical reference.
 
 ## Table of Contents
 
@@ -12,34 +12,25 @@
   - [Quick Start](#quick-start)
     - [Building with Docker/Podman (Recommended)](#building-with-dockerpodman-recommended)
   - [What This Document Covers](#what-this-document-covers)
-  - [Why This Guide Matters](#why-this-guide-matters)
-    - [The Need for Self-Hosted Mail](#the-need-for-self-hosted-mail)
-    - [The Gap This Document Fills](#the-gap-this-document-fills)
-  - [The Complexity of a Modern Mail Setup](#the-complexity-of-a-modern-mail-setup)
-    - [Multiple Protocols and Ports](#multiple-protocols-and-ports)
-    - [Security Layers](#security-layers)
-    - [Service Integration](#service-integration)
-    - [Configuration Complexity](#configuration-complexity)
-  - [Components Covered](#components-covered)
+  - [The Gap This Document Filled](#the-gap-this-document-filled)
+  - [Details of Components Covered](#details-of-components-covered)
     - [Core Mail Services](#core-mail-services)
     - [Filtering and Security](#filtering-and-security)
     - [Web Services](#web-services)
     - [Supporting Infrastructure](#supporting-infrastructure)
-  - [Building the Documentation](#building-the-documentation)
+  - [Detailed Building Instructions For All Platforms](#detailed-building-instructions-for-all-platforms)
     - [Option 1: Docker/Podman (Recommended - No Local Dependencies)](#option-1-dockerpodman-recommended---no-local-dependencies)
     - [Option 2: Local Build (Manual Dependency Installation)](#option-2-local-build-manual-dependency-installation)
       - [Prerequisites](#prerequisites)
       - [Installing on macOS](#installing-on-macos)
       - [Installing on Linux (OpenSuSE/SUSE)](#installing-on-linux-opensusesuse)
-    - [Build Targets](#build-targets)
+    - [MAkefile Build Targets](#makefile-build-targets)
     - [Output Locations](#output-locations)
   - [Project Structure](#project-structure)
     - [DocBook Structure](#docbook-structure)
   - [Historical Context](#historical-context)
     - [When This Was Written (2010-2012)](#when-this-was-written-2010-2012)
     - [What Has Changed Since](#what-has-changed-since)
-    - [Why Preserve This?](#why-preserve-this)
-  - [License](#license)
   - [Contributing](#contributing)
 
 ## Overview
@@ -66,8 +57,6 @@ open output/html/index.html
 make all
 ```
 
-The documentation comprises **over 4,700 lines** of detailed XML covering 11 main sections and 6 comprehensive appendices with complete configuration examples.
-
 ### Building with Docker/Podman (Recommended)
 
 If you don't want to install dependencies on your local system, you can build all formats using Docker or Podman:
@@ -92,12 +81,15 @@ make docker-verify-epub
 make docker-shell
 ```
 
-The Docker approach:
-- ✅ No local dependencies needed (except Docker/Podman)
-- ✅ Consistent build environment across all platforms
-- ✅ Includes all tools: xsltproc, Apache FOP, dbtoepub, epubcheck
-- ✅ Properly configured XML catalogs
-- ✅ Works identically on macOS, Linux, and Windows
+The container includes all necessary dependencies:
+- Alpine Linux 3.19 (minimal base)
+- xsltproc and DocBook XSL stylesheets with proper XML catalogs
+- Apache FOP 2.9 for PDF generation
+- Ruby dbtoepub for EPUB generation
+- EPUBCheck 5.1.0 for EPUB validation
+- Liberation fonts for PDF rendering
+
+
 
 ## What This Document Covers
 
@@ -117,20 +109,7 @@ The tutorial walks through setting up a complete mail server stack consisting of
 
 The document also includes 6 comprehensive appendices with complete configuration file examples for Postfix, Procmail, Dovecot, OpenSSL, and Apache.
 
-## Why This Guide Matters
-
-### The Need for Self-Hosted Mail
-
-While public mail providers like Gmail and Outlook.com offer convenience, there are compelling reasons to run your own mail infrastructure:
-
-- **Privacy and Data Sovereignty** - Complete control over your communication data
-- **Custom Processing** - Automated mail handling, virus scanning, custom filtering rules
-- **Backup Control** - Your own backup strategy and data retention policies
-- **Domain Control** - Send mail from specific domains you control
-- **Multi-Account Aggregation** - Centralize mail from multiple sources
-- **Learning Experience** - Deep understanding of email protocols and infrastructure
-
-### The Gap This Document Fills
+## The Gap This Document Filled
 
 Most mail server tutorials suffer from one or more problems:
 - They perpetuate outdated practices from older tutorials
@@ -139,54 +118,9 @@ Most mail server tutorials suffer from one or more problems:
 - They don't explain *why* certain configurations are necessary
 - They assume too much prior knowledge or skip too many details
 
-This guide aims to provide a *correct* and *modern* (for 2011-2012) explanation with thorough reasoning for every configuration choice.
+This guide aims to provide a *correct* and *modern* (for its time) explanation with thorough reasoning for every configuration choice.
 
-## The Complexity of a Modern Mail Setup
-
-Setting up a proper mail server is genuinely complex because email is an inherently distributed system built on multiple cooperating protocols and services. Understanding this complexity is crucial:
-
-### Multiple Protocols and Ports
-
-Email involves numerous protocols, each serving specific purposes:
-- **SMTP (Port 25, 465, 587)** - Mail transfer between servers and mail submission
-- **IMAP (Port 143, 993)** - Mail retrieval and folder synchronization
-- **POP3 (Port 110, 995)** - Simple mail retrieval
-- **HTTP/HTTPS (Port 80, 443)** - Webmail interface
-- **Submission (Port 587)** - Authenticated mail submission from clients
-
-### Security Layers
-
-Modern mail servers require multiple security layers:
-- **SSL/TLS Encryption** - Protecting data in transit
-- **SASL Authentication** - Secure user authentication
-- **Certificate Management** - Creating and managing SSL certificates
-- **Access Control** - Firewall rules and service restrictions
-- **Spam Prevention** - SpamAssassin configuration and training
-- **Relay Controls** - Preventing your server from becoming an open relay
-
-### Service Integration
-
-Each component must be properly configured to work with the others:
-- Postfix must authenticate against Dovecot (SASL)
-- Dovecot must know where mail is stored (Maildir format)
-- Procmail must integrate with Postfix for message filtering
-- SpamAssassin must integrate with Procmail for spam detection
-- Apache must proxy/serve Roundcube which connects to Dovecot
-- Fetchmail must deliver to Postfix which delivers to local mailboxes
-- All services must use consistent SSL certificates
-
-### Configuration Complexity
-
-Each component has:
-- Multiple configuration files (Dovecot alone has dozens)
-- Hundreds of configuration options
-- Complex interactions between options
-- Security implications for nearly every setting
-- Performance tuning considerations
-
-This is why many people choose hosted solutions - the complexity is real and significant.
-
-## Components Covered
+## Details of Components Covered
 
 ### Core Mail Services
 
@@ -214,7 +148,7 @@ This is why many people choose hosted solutions - the complexity is real and sig
 
 **MySQL** - Database backend for Roundcube to store user preferences, contacts, and other data.
 
-## Building the Documentation
+## Detailed Building Instructions For All Platforms
 
 ### Option 1: Docker/Podman (Recommended - No Local Dependencies)
 
@@ -287,9 +221,7 @@ zypper install fop
 zypper install dbtoepub
 ```
 
-### Build Targets
-
-The original project used **Phing** (PHP-based build system). For accessibility, a Makefile is now provided:
+### MAkefile Build Targets
 
 ```bash
 # Generate single-page HTML (default)
@@ -397,30 +329,9 @@ Several aspects have evolved since this guide was written:
 - DKIM, SPF, and DMARC are now essential for deliverability
 - Modern spam filtering often includes machine learning approaches
 
-### Why Preserve This?
-
-Despite its age, this document has enduring value:
-
-1. **Educational Resource** - Comprehensive explanation of mail server architecture
-2. **Historical Reference** - Documents how things were done in the early 2010s
-3. **Conceptual Foundation** - Core concepts remain valid even as specifics change
-4. **Detailed Methodology** - Example of thorough technical documentation
-5. **Starting Point** - Can be adapted for modern systems with appropriate updates
-
-## License
-
-Copyright (c) 2010-2012 Johan Persson
-
-This documentation is provided as-is for educational and reference purposes. While originally copyrighted, it is being shared publicly as a historical and educational resource.
-
 ## Contributing
 
 As this is an **archival project**, it is **not accepting updates** to the technical content. The goal is to preserve the document as it was, representing a snapshot of mail server configuration practices from 2010-2012.
-
-However, you may:
-- **Report issues** with the build process or documentation generation
-- **Submit corrections** for obvious typos or broken build scripts
-- **Add supplementary material** noting how things have changed (in separate documents)
 
 For modern mail server setup, consider consulting current documentation for:
 - Postfix: http://www.postfix.org/documentation.html
