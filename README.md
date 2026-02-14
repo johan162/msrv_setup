@@ -120,7 +120,7 @@ Most mail server tutorials suffer from one or more problems:
 - They don't explain *why* certain configurations are necessary
 - They assume too much prior knowledge or skip too many details
 
-This guide aims to provide a *correct* and *modern* (for its time) explanation with thorough reasoning for every configuration choice.
+This guide aims to provide a *correct* and a *modern* (for its time) explanation with thorough reasoning for every configuration choice.
 
 ## Details of Components Covered
 
@@ -368,7 +368,7 @@ For modern mail server setup, consider consulting current documentation for:
 - Postfix: http://www.postfix.org/documentation.html
 - Dovecot: https://doc.dovecot.org/
 - Let's Encrypt: https://letsencrypt.org/
-- Modern anti-spam: rspamd.com
+- Modern anti-spam: https://rspamd.com
 
 ---
 

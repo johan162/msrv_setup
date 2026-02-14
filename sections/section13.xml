@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?hard-pagebreak?>
+<sect1 xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
+    version="5.0" xml:id="section.firewall">
+    <title>Firewall Configuration and Network Security</title>
+    <para>A properly configured firewall is essential for protecting your mail server from
+        unauthorized access while allowing legitimate mail traffic. This section covers firewall
+        configuration, port forwarding, and security hardening measures.</para>
+    
+    <sect2>
+        <title>Understanding Required Ports</title>
+        <para>Before configuring the firewall, it's important to understand which ports your mail
+            server needs to have open. The table below summarizes the ports used in our
+            setup:</para>
+        <table>
+            <title>Ports Used by Mail Server</title>
+            <tgroup cols="4">
+                <thead>
+                    <row>
+                        <entry>Port</entry>
+                        <entry>Protocol</entry>
+                        <entry>Service</entry>
+                        <entry>Access Required</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry>25</entry>
+                        <entry><acronym>SMTP</acronym></entry>
+                        <entry>Postfix incoming mail</entry>
+                        <entry>External (for receiving mail from other servers)</entry>
+                    </row>
+                    <row>
+                        <entry>587</entry>
+                        <entry><acronym>SMTP</acronym>/<acronym>SMTPS</acronym></entry>
+                        <entry>Postfix submission</entry>
+                        <entry>External (for users sending mail)</entry>
+                    </row>
+                    <row>
+                        <entry>993</entry>
+                        <entry><acronym>IMAPS</acronym></entry>
+                        <entry>Dovecot secure IMAP</entry>
+                        <entry>External (for users reading mail)</entry>
+                    </row>
+                    <row>
+                        <entry>443</entry>
+                        <entry><acronym>HTTPS</acronym></entry>
+                        <entry>Apache web server</entry>
+                        <entry>External (for Roundcube webmail)</entry>
+                    </row>
+                    <row>
+                        <entry>80</entry>
+                        <entry><acronym>HTTP</acronym></entry>
+                        <entry>Apache web server</entry>
+                        <entry>Optional (can redirect to HTTPS)</entry>
+                    </row>
+                    <row>
+                        <entry>22</entry>
+                        <entry><acronym>SSH</acronym></entry>
+                        <entry>Remote administration</entry>
+                        <entry>Restricted (admin access only)</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        <caution>
+            <para>Do not open ports 110 (<acronym>POP3</acronym>) or 143 (<acronym>IMAP</acronym>)
+                as these are unencrypted protocols. Only use the secure variants (995 for
+                    <acronym>POP3S</acronym> if needed, 993 for <acronym>IMAPS</acronym>).</para>
+        </caution>
+    </sect2>
+    
+    <sect2>
+        <title>Configuring SuSEfirewall2</title>
+        <para>OpenSuSE 11.4 and 12.1 use SuSEfirewall2 as their default firewall. This can be
+            configured either through YaST or by editing configuration files directly.</para>
+        
+        <sect3>
+            <title>Firewall Configuration via YaST</title>
+            <para>The easiest way to configure the firewall is through YaST:</para>
+            <orderedlist>
+                <listitem>
+                    <para>Open YaST and select "Security and Users" → "Firewall"</para>
+                </listitem>
+                <listitem>
+                    <para>In the "Allowed Services" section, add the following services:</para>
+                    <itemizedlist>
+                        <listitem>
+                            <para>SMTP (Mail Transfer Agent)</para>
+                        </listitem>
+                        <listitem>
+                            <para>SMTP-Submission (port 587)</para>
+                        </listitem>
+                        <listitem>
+                            <para>IMAPS (Secure IMAP)</para>
+                        </listitem>
+                        <listitem>
+                            <para>HTTPS (Secure Web Server)</para>
+                        </listitem>
+                    </itemizedlist>
+                </listitem>
+                <listitem>
+                    <para>If needed, add HTTP to redirect to HTTPS</para>
+                </listitem>
+                <listitem>
+                    <para>For SSH access, add "Secure Shell Server" but consider restricting to
+                        specific IP addresses</para>
+                </listitem>
+                <listitem>
+                    <para>Click "Accept" to apply changes</para>
+                </listitem>
+            </orderedlist>
+        </sect3>
+        
+        <sect3>
+            <title>Manual Firewall Configuration</title>
+            <para>For more control, edit the firewall configuration file directly at
+                    <filename>/etc/sysconfig/SuSEfirewall2</filename>:</para>
+            <programlisting># Open ports for mail server
+FW_SERVICES_EXT_TCP="25 80 443 587 993"
+
+# Optionally restrict SSH to specific networks
+FW_SERVICES_EXT_TCP_SECURE="22"
+FW_TRUSTED_NETS="192.168.1.0/24"
+
+# Enable logging of dropped packets for security monitoring
+FW_LOG_DROP_CRIT="yes"
+FW_LOG_DROP_ALL="no"</programlisting>
+            <para>After editing, restart the firewall:</para>
+            <screen>$> sudo systemctl restart SuSEfirewall2</screen>
+            <para>Verify the firewall is running:</para>
+            <screen>$> sudo systemctl status SuSEfirewall2</screen>
+        </sect3>
+    </sect2>
+    
+    <sect2>
+        <title>Configuring firewalld (OpenSuSE 12.1+)</title>
+        <para>Newer OpenSuSE versions may use firewalld instead of SuSEfirewall2. If your system
+            uses firewalld, configure it as follows:</para>
+        <para>Check if firewalld is running:</para>
+        <screen>$> sudo systemctl status firewalld</screen>
+        <para>Add the required services:</para>
+        <screen>$> sudo firewall-cmd --permanent --add-service=smtp
+$> sudo firewall-cmd --permanent --add-service=smtp-submission
+$> sudo firewall-cmd --permanent --add-service=imaps
+$> sudo firewall-cmd --permanent --add-service=https
+$> sudo firewall-cmd --permanent --add-service=http
+$> sudo firewall-cmd --permanent --add-service=ssh</screen>
+        <para>If a service isn't predefined, add ports directly:</para>
+        <screen>$> sudo firewall-cmd --permanent --add-port=587/tcp
+$> sudo firewall-cmd --permanent --add-port=993/tcp</screen>
+        <para>Reload firewall to apply changes:</para>
+        <screen>$> sudo firewall-cmd --reload</screen>
+        <para>Verify the configuration:</para>
+        <screen>$> sudo firewall-cmd --list-all</screen>
+    </sect2>
+    
+    <sect2>
+        <title>Router Port Forwarding</title>
+        <para>If your mail server is behind a router (as is typical for home servers), you must
+            configure port forwarding on your router to direct incoming traffic to your mail
+            server.</para>
+        <para>The exact procedure varies by router manufacturer, but generally:</para>
+        <orderedlist>
+            <listitem>
+                <para>Log into your router's administration interface (typically via web
+                    browser)</para>
+            </listitem>
+            <listitem>
+                <para>Find the "Port Forwarding" or "Virtual Server" section</para>
+            </listitem>
+            <listitem>
+                <para>Create port forwarding rules for each required port:</para>
+                <itemizedlist>
+                    <listitem>
+                        <para>External Port 25 → Internal IP:25 (SMTP)</para>
+                    </listitem>
+                    <listitem>
+                        <para>External Port 587 → Internal IP:587 (SMTP Submission)</para>
+                    </listitem>
+                    <listitem>
+                        <para>External Port 993 → Internal IP:993 (IMAPS)</para>
+                    </listitem>
+                    <listitem>
+                        <para>External Port 443 → Internal IP:443 (HTTPS)</para>
+                    </listitem>
+                </itemizedlist>
+            </listitem>
+            <listitem>
+                <para>Save the configuration and reboot the router if required</para>
+            </listitem>
+        </orderedlist>
+        <caution>
+            <para>Many <acronym>ISP</acronym>s block outgoing connections on port 25 to prevent spam.
+                However, they typically allow incoming connections on port 25 (for receiving mail)
+                and outgoing connections on port 587 (for sending mail). This is one reason we
+                configure Postfix to accept submissions on port 587.</para>
+            <para>Some residential <acronym>ISP</acronym>s also block incoming port 25 connections. If this
+                is the case, you won't be able to receive mail directly from other mail servers, and
+                you'll need to use a mail relay service or upgrade to a business internet
+                connection.</para>
+        </caution>
+        <para>To test if port forwarding is working from outside your network:</para>
+        <screen>$> telnet your-external-ip 25
+$> telnet your-external-ip 587
+$> telnet your-external-ip 993</screen>
+        <para>If the connection succeeds, port forwarding is working. If it times out or is
+            refused, check your router configuration and firewall rules.</para>
+    </sect2>
+    
+    <sect2>
+        <title>Installing and Configuring Fail2ban</title>
+        <para>Fail2ban is a security tool that monitors log files for suspicious activity (such as
+            repeated failed login attempts) and automatically blocks offending IP addresses. This is
+            essential protection against brute-force attacks on your mail server.</para>
+        
+        <sect3>
+            <title>Installing Fail2ban</title>
+            <screen>$> sudo zypper install fail2ban</screen>
+            <para>Enable and start Fail2ban:</para>
+            <screen>$> sudo systemctl enable fail2ban
+$> sudo systemctl start fail2ban</screen>
+        </sect3>
+        
+        <sect3>
+            <title>Configuring Fail2ban for Mail Services</title>
+            <para>Create a local configuration file at
+                    <filename>/etc/fail2ban/jail.local</filename>:</para>
+            <programlisting>[DEFAULT]
+# Ban for 1 hour
+bantime = 3600
+# Look for failures in 10 minute window
+findtime = 600
+# Ban after 5 failures
+maxretry = 5
+
+# Protect Dovecot IMAP/POP3
+[dovecot]
+enabled = true
+port = imap,imaps,pop3,pop3s
+logpath = /var/log/mail.warn
+
+# Protect Postfix SMTP
+[postfix]
+enabled = true
+port = smtp,submission
+logpath = /var/log/mail.warn
+
+# Protect SASL authentication
+[postfix-sasl]
+enabled = true
+port = smtp,submission
+logpath = /var/log/mail.warn
+
+# Protect Apache/Roundcube
+[apache-auth]
+enabled = true
+port = http,https
+logpath = /var/log/apache2/error_log
+
+# Protect SSH (recommended)
+[sshd]
+enabled = true
+port = ssh
+logpath = /var/log/messages</programlisting>
+            <para>Restart Fail2ban to apply the configuration:</para>
+            <screen>$> sudo systemctl restart fail2ban</screen>
+            <para>Check Fail2ban status:</para>
+            <screen>$> sudo fail2ban-client status</screen>
+            <para>To see banned IPs for a specific jail:</para>
+            <screen>$> sudo fail2ban-client status dovecot
+$> sudo fail2ban-client status postfix</screen>
+            <para>To manually unban an IP address if you accidentally locked yourself out:</para>
+            <screen>$> sudo fail2ban-client set dovecot unbanip 192.168.1.100</screen>
+        </sect3>
+        
+        <sect3>
+            <title>Testing Fail2ban</title>
+            <para>To verify Fail2ban is working, you can deliberately trigger a ban from another
+                machine:</para>
+            <orderedlist>
+                <listitem>
+                    <para>Try to connect to your IMAP server with wrong credentials 6 times</para>
+                </listitem>
+                <listitem>
+                    <para>Check if the IP was banned:</para>
+                    <screen>$> sudo fail2ban-client status dovecot</screen>
+                </listitem>
+                <listitem>
+                    <para>Try to connect again - the connection should be refused</para>
+                </listitem>
+                <listitem>
+                    <para>Unban the test IP:</para>
+                    <screen>$> sudo fail2ban-client set dovecot unbanip YOUR-TEST-IP</screen>
+                </listitem>
+            </orderedlist>
+        </sect3>
+    </sect2>
+    
+    <sect2>
+        <title>Additional Security Hardening</title>
+        <para>Beyond firewall configuration, several additional measures can improve your mail
+            server's security posture.</para>
+        
+        <sect3>
+            <title>File Permissions</title>
+            <para>Ensure sensitive configuration files have appropriate permissions:</para>
+            <screen>$> sudo chmod 600 /etc/postfix/main.cf
+$> sudo chmod 600 /etc/dovecot/conf.d/*.conf
+$> sudo chmod 600 /etc/fetchmailrc
+$> sudo chmod 600 /etc/ssl/private/*.key</screen>
+            <para>Private key files should never be world-readable:</para>
+            <screen>$> sudo ls -l /etc/ssl/private/
+# Should show permissions like: -rw------- (600)</screen>
+        </sect3>
+        
+        <sect3>
+            <title>Disable Unnecessary Services</title>
+            <para>Review what services are running and disable those not needed:</para>
+            <screen>$> systemctl list-unit-files --state=enabled</screen>
+            <para>For a minimal mail server, you typically only need:</para>
+            <itemizedlist>
+                <listitem>
+                    <para>postfix</para>
+                </listitem>
+                <listitem>
+                    <para>dovecot</para>
+                </listitem>
+                <listitem>
+                    <para>apache2</para>
+                </listitem>
+                <listitem>
+                    <para>mysql</para>
+                </listitem>
+                <listitem>
+                    <para>sshd</para>
+                </listitem>
+                <listitem>
+                    <para>firewall (SuSEfirewall2 or firewalld)</para>
+                </listitem>
+            </itemizedlist>
+            <para>Disable unnecessary services:</para>
+            <screen>$> sudo systemctl disable &lt;service-name>
+$> sudo systemctl stop &lt;service-name></screen>
+        </sect3>
+        
+        <sect3>
+            <title>Rate Limiting in Postfix</title>
+            <para>Configure Postfix to rate-limit connections to prevent abuse. Add to
+                    <filename>/etc/postfix/main.cf</filename>:</para>
+            <programlisting># Limit connection rate to 100/hour from same IP
+smtpd_client_connection_rate_limit = 100
+
+# Limit number of simultaneous connections per client
+smtpd_client_connection_count_limit = 10
+
+# Limit recipient addresses per message
+smtpd_recipient_limit = 50
+
+# Limit error rate before disconnect
+smtpd_soft_error_limit = 2
+smtpd_hard_error_limit = 5</programlisting>
+            <para>Reload Postfix after changes:</para>
+            <screen>$> sudo postfix reload</screen>
+        </sect3>
+        
+        <sect3>
+            <title>Monitoring Failed Login Attempts</title>
+            <para>Regularly review logs for suspicious activity:</para>
+            <screen># Check for failed Dovecot logins
+$> sudo grep "auth failed" /var/log/mail.warn | tail -20
+
+# Check for Postfix authentication failures
+$> sudo grep "authentication failed" /var/log/mail.warn | tail -20
+
+# See unique IPs with failed attempts
+$> sudo grep "auth failed" /var/log/mail.warn | \
+   awk '{print $NF}' | sort | uniq -c | sort -rn | head -10</screen>
+            <para>High numbers of failed attempts from the same IP indicate a brute-force attack.
+                Fail2ban should be catching these, but manual review helps identify patterns.</para>
+        </sect3>
+        
+        <sect3>
+            <title>Using DNSBL (DNS Blocklists)</title>
+            <para>Configure Postfix to reject mail from known spam sources using
+                    <acronym>DNS</acronym> blocklists. Add to <filename>/etc/postfix/main.cf</filename>:</para>
+            <programlisting>smtpd_recipient_restrictions =
+    permit_mynetworks
+    permit_sasl_authenticated
+    reject_unauth_destination
+    reject_rbl_client zen.spamhaus.org
+    reject_rbl_client bl.spamcop.net
+    reject_rbl_client b.barracudacentral.org</programlisting>
+            <para>This will check connecting mail servers against these blocklists and reject mail
+                from listed IPs.</para>
+            <caution>
+                <para>Be cautious with DNSBL usage - overly aggressive blocking can reject
+                    legitimate mail. Monitor your logs after implementing DNSBL to ensure you're not
+                    blocking wanted email.</para>
+            </caution>
+        </sect3>
+    </sect2>
+    
+    <sect2>
+        <title>Testing Network Security</title>
+        <para>After configuring your firewall and security measures, it's important to verify
+            everything is working correctly.</para>
+        
+        <sect3>
+            <title>Port Scanning from External Network</title>
+            <para>From a computer outside your network (or using an online port scanner), verify
+                only the expected ports are open:</para>
+            <screen>$> nmap -p 20-1000 your-external-ip</screen>
+            <para>You should see only: 25, 80 (if enabled), 443, 587, and 993 as open. All other
+                ports should show as filtered or closed.</para>
+        </sect3>
+        
+        <sect3>
+            <title>Verifying Firewall Rules</title>
+            <para>Check which ports are actually listening:</para>
+            <screen>$> sudo netstat -tlnp | grep LISTEN</screen>
+            <para>Verify iptables rules (SuSEfirewall2 uses iptables internally):</para>
+            <screen>$> sudo iptables -L -n -v</screen>
+            <para>Look for rules accepting traffic on your mail ports.</para>
+        </sect3>
+        
+        <sect3>
+            <title>Testing Mail Flow Through Firewall</title>
+            <para>Test that you can send and receive mail through the firewall:</para>
+            <orderedlist>
+                <listitem>
+                    <para>From an external location, send a test email to your server</para>
+                </listitem>
+                <listitem>
+                    <para>Configure a mail client on an external network to connect via
+                        IMAPS/SMTPS</para>
+                </listitem>
+                <listitem>
+                    <para>Verify you can both send and receive mail</para>
+                </listitem>
+                <listitem>
+                    <para>Access Roundcube via HTTPS from an external network</para>
+                </listitem>
+            </orderedlist>
+            <para>Check firewall logs for any unexpected dropped connections:</para>
+            <screen>$> sudo grep -i "SFW2" /var/log/messages | tail -50</screen>
+        </sect3>
+    </sect2>
+</sect1>

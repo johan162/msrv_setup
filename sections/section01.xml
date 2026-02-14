@@ -19,7 +19,7 @@
         <listitem>
             <para>need for automatic processing of messages with external programs at message
                 arrival (such as automatic replies depending on message content or perform other
-                pre-defined actions such as scannig messages for viruses)</para>
+                pre-defined actions such as scanning messages for viruses)</para>
         </listitem>
         <listitem>
             <para>control over mail backup</para>
@@ -84,7 +84,7 @@
         <title>Applicable OpenSuSE versions and pre-requisites</title>
         <para>Much of the information here is generic and not specific to OpenSuSE. However,
             location and structure of specific configuration files are distribution dependent. This
-            document has been verified on OpenSuSE 11.4 as well as 12.1. Most ofthe details given in
+            document has been verified on OpenSuSE 11.4 as well as 12.1. Most of the details given in
             this tutorial should also be valid on older 11.x OpenSuSE releases. OpenSuSE resembles
             the RedHat distribution in some respect but has enough differences of its own to not
             make it directly compatible. Other systems (for example Ubuntu) uses a rather different
@@ -120,7 +120,7 @@
         <title>Installed components</title>
         <para>We will assume that all the components listed below are installed on the server. They
                 are all available (with one exception as noted below) from the standard OpenSuSE
-                repository as packages. For now it is enought if these components are installed but
+                repository as packages. For now it is enough if these components are installed but
                 not configured - this is what the rest of this tutorial is all about. All these
                 components can be installed from the Yast2 package manager as listed below (the
                 "core packages" indicates the minimum needed packages.)</para>
@@ -177,7 +177,7 @@
                 <listitem>
                     <para><emphasis role="bold">Procmail</emphasis> - Used for rule based mail
                         filtering which will allow things like sorting mails into folders depending
-                        on there content or do other types of automatic processing based on the
+                        on their content or do other types of automatic processing based on the
                         content of the messages.</para>
                     <para>Core packages: <literal>procmail</literal></para>
                 </listitem>

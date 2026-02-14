@@ -1,0 +1,669 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?hard-pagebreak?>
+<appendix 
+    xmlns="http://docbook.org/ns/docbook" 
+    xmlns:xlink="http://www.w3.org/1999/xlink" 
+    version="5.0" 
+    xml:id="appendix.quickref">
+    
+    <title>Quick Reference Guide</title>
+    <para>This appendix provides quick reference information for common tasks, commands, file
+        locations, and configuration syntax.</para>
+    
+    <sect1>
+        <title>Service Management Commands</title>
+        
+        <sect2>
+            <title>Controlling Services</title>
+            <table>
+                <title>Service Control Commands</title>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Task</entry>
+                            <entry>Command</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>Start service</entry>
+                            <entry><command>sudo systemctl start &lt;service></command></entry>
+                        </row>
+                        <row>
+                            <entry>Stop service</entry>
+                            <entry><command>sudo systemctl stop &lt;service></command></entry>
+                        </row>
+                        <row>
+                            <entry>Restart service</entry>
+                            <entry><command>sudo systemctl restart &lt;service></command></entry>
+                        </row>
+                        <row>
+                            <entry>Reload configuration</entry>
+                            <entry><command>sudo systemctl reload &lt;service></command></entry>
+                        </row>
+                        <row>
+                            <entry>Check status</entry>
+                            <entry><command>sudo systemctl status &lt;service></command></entry>
+                        </row>
+                        <row>
+                            <entry>Enable at boot</entry>
+                            <entry><command>sudo systemctl enable &lt;service></command></entry>
+                        </row>
+                        <row>
+                            <entry>Disable at boot</entry>
+                            <entry><command>sudo systemctl disable &lt;service></command></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+            <para>Service names: <literal>postfix</literal>, <literal>dovecot</literal>,
+                    <literal>apache2</literal>, <literal>mysql</literal></para>
+        </sect2>
+        
+        <sect2>
+            <title>Postfix-Specific Commands</title>
+            <table>
+                <title>Postfix Commands</title>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Task</entry>
+                            <entry>Command</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>Check configuration syntax</entry>
+                            <entry><command>sudo postfix check</command></entry>
+                        </row>
+                        <row>
+                            <entry>Reload configuration</entry>
+                            <entry><command>sudo postfix reload</command></entry>
+                        </row>
+                        <row>
+                            <entry>View mail queue</entry>
+                            <entry><command>mailq</command> or <command>postqueue -p</command></entry>
+                        </row>
+                        <row>
+                            <entry>Flush mail queue</entry>
+                            <entry><command>sudo postqueue -f</command></entry>
+                        </row>
+                        <row>
+                            <entry>Delete message from queue</entry>
+                            <entry><command>sudo postsuper -d &lt;queue-id></command></entry>
+                        </row>
+                        <row>
+                            <entry>Delete all queued mail</entry>
+                            <entry><command>sudo postsuper -d ALL</command></entry>
+                        </row>
+                        <row>
+                            <entry>View configuration parameter</entry>
+                            <entry><command>postconf &lt;parameter></command></entry>
+                        </row>
+                        <row>
+                            <entry>View all configuration</entry>
+                            <entry><command>postconf</command></entry>
+                        </row>
+                        <row>
+                            <entry>View message content</entry>
+                            <entry><command>postcat -q &lt;queue-id></command></entry>
+                        </row>
+                        <row>
+                            <entry>Test SMTP connection</entry>
+                            <entry><command>telnet localhost 25</command></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </sect2>
+        
+        <sect2>
+            <title>Dovecot-Specific Commands</title>
+            <table>
+                <title>Dovecot Commands</title>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Task</entry>
+                            <entry>Command</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>View configuration</entry>
+                            <entry><command>doveconf</command></entry>
+                        </row>
+                        <row>
+                            <entry>View specific setting</entry>
+                            <entry><command>doveconf &lt;setting></command></entry>
+                        </row>
+                        <row>
+                            <entry>Test authentication</entry>
+                            <entry><command>doveadm auth test &lt;user> &lt;password></command></entry>
+                        </row>
+                        <row>
+                            <entry>Force mailbox re-indexing</entry>
+                            <entry><command>doveadm force-resync -u &lt;user> '*'</command></entry>
+                        </row>
+                        <row>
+                            <entry>List user mailboxes</entry>
+                            <entry><command>doveadm mailbox list -u &lt;user></command></entry>
+                        </row>
+                        <row>
+                            <entry>Show who is logged in</entry>
+                            <entry><command>doveadm who</command></entry>
+                        </row>
+                        <row>
+                            <entry>Test IMAP connection</entry>
+                            <entry><command>openssl s_client -connect localhost:993</command></entry>
+                        </row>
+                        <row>
+                            <entry>Test SMTP submission with TLS</entry>
+                            <entry><command>openssl s_client -connect localhost:587 -starttls smtp</command></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </sect2>
+    </sect1>
+    
+    <sect1>
+        <title>Important File Locations</title>
+        <table>
+            <title>Configuration Files</title>
+            <tgroup cols="3">
+                <thead>
+                    <row>
+                        <entry>Component</entry>
+                        <entry>File</entry>
+                        <entry>Purpose</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry>Postfix Main</entry>
+                        <entry><filename>/etc/postfix/main.cf</filename></entry>
+                        <entry>Main Postfix configuration</entry>
+                    </row>
+                    <row>
+                        <entry>Postfix Master</entry>
+                        <entry><filename>/etc/postfix/master.cf</filename></entry>
+                        <entry>Service definitions</entry>
+                    </row>
+                    <row>
+                        <entry>Postfix Virtual</entry>
+                        <entry><filename>/etc/postfix/virtual</filename></entry>
+                        <entry>Virtual alias mappings</entry>
+                    </row>
+                    <row>
+                        <entry>Dovecot Main</entry>
+                        <entry><filename>/etc/dovecot/dovecot.conf</filename></entry>
+                        <entry>Main Dovecot configuration</entry>
+                    </row>
+                    <row>
+                        <entry>Dovecot Config Dir</entry>
+                        <entry><filename>/etc/dovecot/conf.d/</filename></entry>
+                        <entry>Modular configuration files</entry>
+                    </row>
+                    <row>
+                        <entry>Dovecot Auth</entry>
+                        <entry><filename>/etc/dovecot/conf.d/10-auth.conf</filename></entry>
+                        <entry>Authentication settings</entry>
+                    </row>
+                    <row>
+                        <entry>Dovecot SSL</entry>
+                        <entry><filename>/etc/dovecot/conf.d/10-ssl.conf</filename></entry>
+                        <entry>SSL/TLS settings</entry>
+                    </row>
+                    <row>
+                        <entry>Dovecot Mail</entry>
+                        <entry><filename>/etc/dovecot/conf.d/10-mail.conf</filename></entry>
+                        <entry>Mail storage settings</entry>
+                    </row>
+                    <row>
+                        <entry>Dovecot Master</entry>
+                        <entry><filename>/etc/dovecot/conf.d/10-master.conf</filename></entry>
+                        <entry>Service definitions</entry>
+                    </row>
+                    <row>
+                        <entry>Apache Main</entry>
+                        <entry><filename>/etc/apache2/httpd.conf</filename></entry>
+                        <entry>Apache main configuration</entry>
+                    </row>
+                    <row>
+                        <entry>Apache Config Dir</entry>
+                        <entry><filename>/etc/apache2/conf.d/</filename></entry>
+                        <entry>Additional configuration files</entry>
+                    </row>
+                    <row>
+                        <entry>Apache VHosts</entry>
+                        <entry><filename>/etc/apache2/vhosts.d/</filename></entry>
+                        <entry>Virtual host definitions</entry>
+                    </row>
+                    <row>
+                        <entry>Roundcube Config</entry>
+                        <entry><filename>/srv/www/htdocs/roundcube/config/config.inc.php</filename></entry>
+                        <entry>Roundcube configuration</entry>
+                    </row>
+                    <row>
+                        <entry>SpamAssassin</entry>
+                        <entry><filename>/etc/mail/spamassassin/local.cf</filename></entry>
+                        <entry>SpamAssassin configuration</entry>
+                    </row>
+                    <row>
+                        <entry>Procmail</entry>
+                        <entry><filename>~/.procmailrc</filename></entry>
+                        <entry>Procmail recipes (per-user)</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        
+        <table>
+            <title>Log Files</title>
+            <tgroup cols="2">
+                <thead>
+                    <row>
+                        <entry>Log File</entry>
+                        <entry>Content</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry><filename>/var/log/mail.info</filename></entry>
+                        <entry>All mail system messages (Postfix and Dovecot)</entry>
+                    </row>
+                    <row>
+                        <entry><filename>/var/log/mail.err</filename></entry>
+                        <entry>Mail system errors only</entry>
+                    </row>
+                    <row>
+                        <entry><filename>/var/log/mail.warn</filename></entry>
+                        <entry>Mail system warnings</entry>
+                    </row>
+                    <row>
+                        <entry><filename>/var/log/apache2/access_log</filename></entry>
+                        <entry>Apache access log</entry>
+                    </row>
+                    <row>
+                        <entry><filename>/var/log/apache2/error_log</filename></entry>
+                        <entry>Apache errors</entry>
+                    </row>
+                    <row>
+                        <entry><filename>/var/log/messages</filename></entry>
+                        <entry>General system messages</entry>
+                    </row>
+                    <row>
+                        <entry><filename>/srv/www/htdocs/roundcube/logs/errors</filename></entry>
+                        <entry>Roundcube error log</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        
+        <table>
+            <title>Data Directories</title>
+            <tgroup cols="2">
+                <thead>
+                    <row>
+                        <entry>Directory</entry>
+                        <entry>Purpose</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry><filename>~/Maildir</filename></entry>
+                        <entry>User mail storage</entry>
+                    </row>
+                    <row>
+                        <entry><filename>/var/spool/postfix</filename></entry>
+                        <entry>Postfix mail queue</entry>
+                    </row>
+                    <row>
+                        <entry><filename>/srv/www/htdocs/roundcube</filename></entry>
+                        <entry>Roundcube web application</entry>
+                    </row>
+                    <row>
+                        <entry><filename>/etc/ssl/certs</filename></entry>
+                        <entry>SSL certificates</entry>
+                    </row>
+                    <row>
+                        <entry><filename>/etc/ssl/private</filename></entry>
+                        <entry>SSL private keys (restricted access)</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+    </sect1>
+    
+    <sect1>
+        <title>Network Ports Reference</title>
+        <table>
+            <title>Required Network Ports</title>
+            <tgroup cols="4">
+                <thead>
+                    <row>
+                        <entry>Port</entry>
+                        <entry>Protocol</entry>
+                        <entry>Service</entry>
+                        <entry>Purpose</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry>25</entry>
+                        <entry>TCP</entry>
+                        <entry>SMTP</entry>
+                        <entry>Receive mail from other servers</entry>
+                    </row>
+                    <row>
+                        <entry>587</entry>
+                        <entry>TCP</entry>
+                        <entry>SMTP Submission</entry>
+                        <entry>Send mail with authentication (preferred)</entry>
+                    </row>
+                    <row>
+                        <entry>465</entry>
+                        <entry>TCP</entry>
+                        <entry>SMTPS</entry>
+                        <entry>Legacy SMTP over SSL (deprecated)</entry>
+                    </row>
+                    <row>
+                        <entry>143</entry>
+                        <entry>TCP</entry>
+                        <entry>IMAP</entry>
+                        <entry>Access mail (unencrypted, not recommended)</entry>
+                    </row>
+                    <row>
+                        <entry>993</entry>
+                        <entry>TCP</entry>
+                        <entry>IMAPS</entry>
+                        <entry>Access mail over SSL/TLS (recommended)</entry>
+                    </row>
+                    <row>
+                        <entry>110</entry>
+                        <entry>TCP</entry>
+                        <entry>POP3</entry>
+                        <entry>Download mail (unencrypted, not recommended)</entry>
+                    </row>
+                    <row>
+                        <entry>995</entry>
+                        <entry>TCP</entry>
+                        <entry>POP3S</entry>
+                        <entry>Download mail over SSL/TLS</entry>
+                    </row>
+                    <row>
+                        <entry>80</entry>
+                        <entry>TCP</entry>
+                        <entry>HTTP</entry>
+                        <entry>Web interface access (redirects to HTTPS)</entry>
+                    </row>
+                    <row>
+                        <entry>443</entry>
+                        <entry>TCP</entry>
+                        <entry>HTTPS</entry>
+                        <entry>Secure web interface (Roundcube)</entry>
+                    </row>
+                    <row>
+                        <entry>22</entry>
+                        <entry>TCP</entry>
+                        <entry>SSH</entry>
+                        <entry>Remote administration</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+    </sect1>
+    
+    <sect1>
+        <title>Configuration Syntax Quick Reference</title>
+        
+        <sect2>
+            <title>Postfix main.cf Syntax</title>
+            <programlisting># Comments start with #
+parameter = value
+
+# Multi-line values use indentation
+parameter = value1,
+    value2,
+    value3
+
+# Whitespace around = is optional but recommended
+parameter = value
+
+# Access variables
+parameter = $other_parameter
+
+# Common variable syntax
+myhostname = mail.example.com
+mydomain = example.com
+myorigin = $mydomain
+mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain</programlisting>
+        </sect2>
+        
+        <sect2>
+            <title>Postfix master.cf Syntax</title>
+            <programlisting># service type  private unpriv  chroot  wakeup  maxproc command
+smtp      inet  n       -       n       -       -       smtpd
+
+# Indented lines are command options
+submission inet n       -       n       -       -       smtpd
+  -o syslog_name=postfix/submission
+  -o smtpd_tls_security_level=encrypt
+  -o smtpd_sasl_auth_enable=yes</programlisting>
+        </sect2>
+        
+        <sect2>
+            <title>Dovecot Configuration Syntax</title>
+            <programlisting># Comments start with #
+setting = value
+
+# Sections use curly braces
+protocol imap {
+  mail_plugins = $mail_plugins imap_quota
+}
+
+# Subsections
+service auth {
+  unix_listener auth-userdb {
+    mode = 0600
+    user = postfix
+  }
+}</programlisting>
+        </sect2>
+        
+        <sect2>
+            <title>Apache Configuration Syntax</title>
+            <programlisting># Comments start with #
+# Directives
+ServerName mail.example.com
+
+# Sections use angle brackets
+&lt;VirtualHost *:443>
+    ServerName mail.example.com
+    DocumentRoot /srv/www/htdocs
+    
+    # Nested sections
+    &lt;Directory /srv/www/htdocs/roundcube>
+        AllowOverride All
+        Require all granted
+    &lt;/Directory>
+&lt;/VirtualHost></programlisting>
+        </sect2>
+    </sect1>
+    
+    <sect1>
+        <title>Common Testing Commands</title>
+        <table>
+            <title>Testing and Diagnostics</title>
+            <tgroup cols="2">
+                <thead>
+                    <row>
+                        <entry>Test</entry>
+                        <entry>Command</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry>Test SMTP connection</entry>
+                        <entry><command>telnet localhost 25</command></entry>
+                    </row>
+                    <row>
+                        <entry>Test SMTP with TLS</entry>
+                        <entry><command>openssl s_client -connect localhost:587 -starttls
+                            smtp</command></entry>
+                    </row>
+                    <row>
+                        <entry>Test IMAPS connection</entry>
+                        <entry><command>openssl s_client -connect localhost:993</command></entry>
+                    </row>
+                    <row>
+                        <entry>Check if port is listening</entry>
+                        <entry><command>sudo netstat -tlnp | grep :&lt;port></command></entry>
+                    </row>
+                    <row>
+                        <entry>Alternative port check</entry>
+                        <entry><command>sudo ss -tlnp | grep :&lt;port></command></entry>
+                    </row>
+                    <row>
+                        <entry>Test DNS MX lookup</entry>
+                        <entry><command>dig MX example.com</command></entry>
+                    </row>
+                    <row>
+                        <entry>Simple DNS lookup</entry>
+                        <entry><command>host example.com</command></entry>
+                    </row>
+                    <row>
+                        <entry>Check certificate expiration</entry>
+                        <entry><command>openssl x509 -in &lt;file> -noout -dates</command></entry>
+                    </row>
+                    <row>
+                        <entry>Check certificate details</entry>
+                        <entry><command>openssl x509 -in &lt;file> -noout -text</command></entry>
+                    </row>
+                    <row>
+                        <entry>Verify cert/key match</entry>
+                        <entry><command>openssl x509 -noout -modulus -in &lt;cert> | openssl
+                            md5</command></entry>
+                    </row>
+                    <row>
+                        <entry>Test mail delivery</entry>
+                        <entry><command>echo "Test" | mail -s "Subject" user@domain.com</command></entry>
+                    </row>
+                    <row>
+                        <entry>Check firewall rules</entry>
+                        <entry><command>sudo iptables -L -n -v</command></entry>
+                    </row>
+                    <row>
+                        <entry>Scan open ports</entry>
+                        <entry><command>nmap -p 25,587,993,443 localhost</command></entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+    </sect1>
+    
+    <sect1>
+        <title>Log Monitoring Commands</title>
+        <para>Commands for viewing and monitoring log files:</para>
+        <screen># View last 50 lines of mail log
+$> sudo tail -50 /var/log/mail.info
+
+# Follow mail log in real-time
+$> sudo tail -f /var/log/mail.info
+
+# View mail errors only
+$> sudo grep -i error /var/log/mail.err
+
+# Search for specific email address
+$> sudo grep "user@example.com" /var/log/mail.info
+
+# View today's authentication failures
+$> sudo grep "$(date '+%b %e')" /var/log/mail.warn | grep -i "auth.*failed"
+
+# Count authentication failures
+$> sudo grep "authentication failed" /var/log/mail.warn | wc -l
+
+# View Apache errors from last hour
+$> sudo tail -100 /var/log/apache2/error_log
+
+# Search Apache log for specific IP
+$> sudo grep "192.168.1.100" /var/log/apache2/access_log
+
+# View systemd journal for service
+$> sudo journalctl -u postfix -n 50
+$> sudo journalctl -u dovecot -n 50
+
+# Follow journal in real-time
+$> sudo journalctl -u postfix -f</screen>
+    </sect1>
+    
+    <sect1>
+        <title>Useful One-Liners</title>
+        <para>Handy commands for common tasks:</para>
+        <screen># List all local users with mail
+$> ls -1 /home/*/Maildir/new | wc -l
+
+# Check disk space usage by mailboxes
+$> du -sh /home/*/Maildir | sort -h
+
+# Find large messages in queue
+$> find /var/spool/postfix -type f -size +1M -ls
+
+# Count messages in queue by status
+$> sudo qshape active
+$> sudo qshape deferred
+
+# Show current IMAP connections
+$> sudo netstat -tn | grep :993 | wc -l
+
+# Show top 10 sender addresses in queue
+$> mailq | grep '^[A-F0-9]' | awk '{print $7}' | sort | uniq -c | sort -rn | head -10
+
+# Check if TLS is working
+$> echo QUIT | openssl s_client -connect localhost:993 2>/dev/null | grep "Verify return code"
+
+# Test authentication
+$> printf "\\0username\\0password" | base64
+# Use output in: AUTH PLAIN &lt;base64-string>
+
+# Reload all mail services
+$> for svc in postfix dovecot apache2; do sudo systemctl reload $svc; done
+
+# Check all service status
+$> for svc in postfix dovecot apache2 mysql; do systemctl is-active $svc; done</screen>
+    </sect1>
+    
+    <sect1>
+        <title>Emergency Procedures</title>
+        
+        <sect2>
+            <title>Stop All Mail Processing</title>
+            <screen>$> sudo systemctl stop postfix
+$> sudo systemctl stop dovecot</screen>
+        </sect2>
+        
+        <sect2>
+            <title>Clear All Queued Mail (Use with Caution!)</title>
+            <screen>$> sudo postsuper -d ALL
+$> sudo postqueue -p  # Verify queue is empty</screen>
+        </sect2>
+        
+        <sect2>
+            <title>Revert to Backup Configuration</title>
+            <screen># Assuming you have backups in /root/backup
+$> sudo cp /root/backup/main.cf /etc/postfix/main.cf
+$> sudo cp /root/backup/dovecot.conf /etc/dovecot/dovecot.conf
+$> sudo postfix check
+$> sudo systemctl restart postfix
+$> sudo systemctl restart dovecot</screen>
+        </sect2>
+        
+        <sect2>
+            <title>Disable Service at Boot (If Problematic)</title>
+            <screen>$> sudo systemctl disable postfix
+$> sudo systemctl disable dovecot</screen>
+        </sect2>
+    </sect1>
+</appendix>

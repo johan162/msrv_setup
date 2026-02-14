@@ -263,7 +263,7 @@
             acquired taste at best and takes some getting used to. To ease the writing pain we have
             collected a few common and useful <acronym>procmail</acronym> recipes in <xref
                 xlink:href="#appendix.procmail"/>. On the net there are also dedicated pages with
-            recipies for several commonly used procmail rules.</para>
+            recipes for several commonly used procmail rules.</para>
         
             <figure xml:id="fig.postfix-procmail">
                 <title>Interaction between Postfix and procmail</title>
@@ -330,15 +330,15 @@
             (Secure Socket Layer) connections and the encryption/decryption keys via this library
             and its tools is somewhat convoluted. A large part of the confusion (as witnessed by the
             countless requests for help on the net) with this library is that very few takes the
-            time to understand it. As a result many of the "recepies" found on the net is obsolete,
+            time to understand it. As a result many of the "recipes" found on the net is obsolete,
             misuses standards or are plain wrong. Unfortunate the developers of openssl and its
             tools have been kind enough to maintain compatibility with very old ways of doing
-            things. This results in that old recepies that uses very antiquated ways still (kind of)
+            things. This results in that old recipes that uses very antiquated ways still (kind of)
             work. Since most people (even administrators) are more than happy to just use something
-            that seems to work (without understanding it) this has reulted in both some very bad
-            habits when useing openssl as well as potential security weaknesses and inconviniences
+            that seems to work (without understanding it) this has resulted in both some very bad
+            habits when using openssl as well as potential security weaknesses and inconveniences
             which could be easily avoided. </para>
-        <para>To remedy this situation we will explain in detailes and show the modern and secure
+        <para>To remedy this situation we will explain in details and show the modern and secure
             way of setting up the necessary encryption/decryption infrastructure. To really cover
             all the details in an accessible way we have also added an entire appendix describing
             how to use the library <xref xlink:href="#appendix.openssl"/>.</para>

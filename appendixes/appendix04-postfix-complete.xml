@@ -28,7 +28,7 @@
     </itemizedlist>
     <para>Keep in mind that this is a minimal (but working) configuration file and that there are
         many more parameters that can be adjusted. All parameters that has not been explicitly
-        defined in this file will take on there default values.</para>
+        defined in this file will take on their default values.</para>
     <sect1>
         <title>main.cf</title>
         <programlisting linenumbering="numbered"><xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="../src/main.cf" parse="text"/></programlisting>

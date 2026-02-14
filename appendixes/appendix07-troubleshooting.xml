@@ -1,0 +1,646 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?hard-pagebreak?>
+<appendix 
+    xmlns="http://docbook.org/ns/docbook" 
+    xmlns:xlink="http://www.w3.org/1999/xlink" 
+    version="5.0" 
+    xml:id="appendix.troubleshooting">
+    
+    <title>Troubleshooting Guide</title>
+    <para>This appendix provides solutions to common problems you may encounter when setting up and
+        running your mail server. Issues are organized by component and symptom.</para>
+    
+    <sect1>
+        <title>General Diagnostic Approach</title>
+        <para>When troubleshooting mail server issues, follow this systematic approach:</para>
+        <orderedlist>
+            <listitem>
+                <para><emphasis role="bold">Check if services are running</emphasis> - Verify all
+                    required services are active</para>
+            </listitem>
+            <listitem>
+                <para><emphasis role="bold">Review log files</emphasis> - Look for error messages
+                    and warnings</para>
+            </listitem>
+            <listitem>
+                <para><emphasis role="bold">Test connectivity</emphasis> - Verify network
+                    connections and firewall rules</para>
+            </listitem>
+            <listitem>
+                <para><emphasis role="bold">Verify configuration syntax</emphasis> - Check for typos
+                    or syntax errors</para>
+            </listitem>
+            <listitem>
+                <para><emphasis role="bold">Test incrementally</emphasis> - Add complexity gradually
+                    to isolate issues</para>
+            </listitem>
+        </orderedlist>
+        
+        <sect2>
+            <title>Key Log Files</title>
+            <para>Understanding where to look for log information is crucial:</para>
+            <table>
+                <title>Important Log Files</title>
+                <tgroup cols="3">
+                    <thead>
+                        <row>
+                            <entry>Component</entry>
+                            <entry>Log File Location</entry>
+                            <entry>What It Contains</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>Postfix</entry>
+                            <entry><filename>/var/log/mail.info</filename></entry>
+                            <entry>All mail delivery information</entry>
+                        </row>
+                        <row>
+                            <entry>Postfix Errors</entry>
+                            <entry><filename>/var/log/mail.err</filename></entry>
+                            <entry>Error messages only</entry>
+                        </row>
+                        <row>
+                            <entry>Postfix Warnings</entry>
+                            <entry><filename>/var/log/mail.warn</filename></entry>
+                            <entry>Warning messages</entry>
+                        </row>
+                        <row>
+                            <entry>Dovecot</entry>
+                            <entry><filename>/var/log/mail.info</filename></entry>
+                            <entry>IMAP/POP3 access and authentication</entry>
+                        </row>
+                        <row>
+                            <entry>Apache</entry>
+                            <entry><filename>/var/log/apache2/error_log</filename></entry>
+                            <entry>Web server errors</entry>
+                        </row>
+                        <row>
+                            <entry>Apache Access</entry>
+                            <entry><filename>/var/log/apache2/access_log</filename></entry>
+                            <entry>All HTTP/HTTPS requests</entry>
+                        </row>
+                        <row>
+                            <entry>System Messages</entry>
+                            <entry><filename>/var/log/messages</filename></entry>
+                            <entry>General system events</entry>
+                        </row>
+                        <row>
+                            <entry>Authentication</entry>
+                            <entry><filename>/var/log/messages</filename></entry>
+                            <entry>PAM and system authentication</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+            <para>To monitor logs in real-time while testing:</para>
+            <screen>$> sudo tail -f /var/log/mail.info
+$> sudo tail -f /var/log/mail.err
+$> sudo tail -f /var/log/apache2/error_log</screen>
+        </sect2>
+        
+        <sect2>
+            <title>Checking Service Status</title>
+            <para>First step in any troubleshooting is verifying services are running:</para>
+            <screen>$> sudo systemctl status postfix
+$> sudo systemctl status dovecot
+$> sudo systemctl status apache2
+$> sudo systemctl status mysql</screen>
+            <para>If a service is not running, start it:</para>
+            <screen>$> sudo systemctl start &lt;service-name></screen>
+            <para>If a service fails to start, check its logs for the reason:</para>
+            <screen>$> sudo journalctl -u postfix -n 50
+$> sudo journalctl -u dovecot -n 50</screen>
+        </sect2>
+    </sect1>
+    
+    <sect1>
+        <title>Postfix Issues</title>
+        
+        <sect2>
+            <title>Problem: Cannot Send Mail - "Connection Refused"</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> Mail clients cannot connect to send
+                mail, error messages mention "connection refused"</para>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>Postfix is not running:</para>
+                    <screen>$> sudo systemctl status postfix
+$> sudo systemctl start postfix</screen>
+                </listitem>
+                <listitem>
+                    <para>Firewall is blocking the port:</para>
+                    <screen>$> sudo iptables -L -n | grep 587
+$> sudo firewall-cmd --list-ports</screen>
+                    <para>Add the port if missing (see <xref linkend="section.firewall"/>)</para>
+                </listitem>
+                <listitem>
+                    <para>Postfix is not listening on the expected port:</para>
+                    <screen>$> sudo netstat -tlnp | grep master
+$> sudo ss -tlnp | grep master</screen>
+                    <para>Check <filename>/etc/postfix/master.cf</filename> to ensure submission
+                        port (587) is configured</para>
+                </listitem>
+            </orderedlist>
+        </sect2>
+        
+        <sect2>
+            <title>Problem: Authentication Failed When Sending Mail</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> "Authentication failed" or "Relay
+                access denied" errors</para>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>Wrong username or password:</para>
+                    <para>Verify credentials by testing login via command line:</para>
+                    <screen>$> doveadm auth test username password</screen>
+                </listitem>
+                <listitem>
+                    <para>SASL not properly configured:</para>
+                    <para>Check Postfix is configured to use Dovecot for authentication:</para>
+                    <screen>$> postconf | grep sasl
+# Should show:
+# smtpd_sasl_auth_enable = yes
+# smtpd_sasl_type = dovecot
+# smtpd_sasl_path = private/auth</screen>
+                </listitem>
+                <listitem>
+                    <para>Dovecot auth socket permissions:</para>
+                    <screen>$> ls -l /var/spool/postfix/private/auth
+# Should be accessible by postfix user</screen>
+                    <para>Check <filename>/etc/dovecot/conf.d/10-master.conf</filename> for proper
+                        permissions (see <xref linkend="chap.dovecot"/>)</para>
+                </listitem>
+                <listitem>
+                    <para>Check authentication attempts in logs:</para>
+                    <screen>$> sudo grep "authentication failed" /var/log/mail.warn</screen>
+                </listitem>
+            </orderedlist>
+        </sect2>
+        
+        <sect2>
+            <title>Problem: Mail Stuck in Queue</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> Messages remain in queue for extended
+                periods</para>
+            <para><emphasis role="bold">Diagnosis:</emphasis></para>
+            <screen>$> mailq
+$> postqueue -p</screen>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>DNS resolution problems:</para>
+                    <screen>$> host recipient-domain.com
+$> dig MX recipient-domain.com</screen>
+                    <para>If DNS fails, check <filename>/etc/resolv.conf</filename></para>
+                </listitem>
+                <listitem>
+                    <para>Remote server temporarily unavailable (transient failure):</para>
+                    <para>This is normal - Postfix will retry. Check queue message details:</para>
+                    <screen>$> postcat -q &lt;queue-id></screen>
+                </listitem>
+                <listitem>
+                    <para>Relay host not accepting mail:</para>
+                    <para>If using ISP relay, verify credentials and host configuration in
+                            <filename>/etc/postfix/main.cf</filename>:</para>
+                    <screen>$> postconf | grep relayhost
+$> postconf | grep smtp_sasl</screen>
+                </listitem>
+                <listitem>
+                    <para>Force immediate delivery attempt:</para>
+                    <screen>$> sudo postqueue -f</screen>
+                </listitem>
+            </orderedlist>
+        </sect2>
+        
+        <sect2>
+            <title>Problem: "Relay Access Denied" When Receiving Mail</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> External senders receive "Relay access
+                denied" errors</para>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>Domain not in mydestination or virtual_mailbox_domains:</para>
+                    <screen>$> postconf mydestination
+$> postconf virtual_mailbox_domains</screen>
+                    <para>Add your domain to one of these parameters in
+                            <filename>/etc/postfix/main.cf</filename></para>
+                </listitem>
+                <listitem>
+                    <para>Incorrect smtpd_recipient_restrictions:</para>
+                    <screen>$> postconf smtpd_recipient_restrictions</screen>
+                    <para>Must include <literal>permit_mynetworks</literal> and
+                            <literal>reject_unauth_destination</literal></para>
+                </listitem>
+            </orderedlist>
+        </sect2>
+        
+        <sect2>
+            <title>Problem: Postfix Configuration Errors</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> Postfix fails to start or reload</para>
+            <para><emphasis role="bold">Diagnosis:</emphasis></para>
+            <screen>$> sudo postfix check
+$> sudo postfix reload</screen>
+            <para>This will report syntax errors in configuration files.</para>
+            <para>Common syntax errors:</para>
+            <itemizedlist>
+                <listitem>
+                    <para>Missing = in main.cf</para>
+                </listitem>
+                <listitem>
+                    <para>Trailing spaces after line continuation \</para>
+                </listitem>
+                <listitem>
+                    <para>Wrong indentation in master.cf</para>
+                </listitem>
+            </itemizedlist>
+        </sect2>
+    </sect1>
+    
+    <sect1>
+        <title>Dovecot Issues</title>
+        
+        <sect2>
+            <title>Problem: Cannot Connect to IMAP Server</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> Mail clients timeout or receive
+                "connection refused"</para>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>Dovecot not running:</para>
+                    <screen>$> sudo systemctl status dovecot
+$> sudo systemctl start dovecot</screen>
+                </listitem>
+                <listitem>
+                    <para>Listening on wrong interface or port:</para>
+                    <screen>$> sudo netstat -tlnp | grep dovecot
+$> doveconf | grep listen</screen>
+                    <para>Should show listening on port 993 (IMAPS)</para>
+                </listitem>
+                <listitem>
+                    <para>Firewall blocking IMAPS port:</para>
+                    <screen>$> sudo iptables -L -n | grep 993</screen>
+                </listitem>
+                <listitem>
+                    <para>Test connection from command line:</para>
+                    <screen>$> openssl s_client -connect localhost:993
+# Should connect and show certificate information</screen>
+                </listitem>
+            </orderedlist>
+        </sect2>
+        
+        <sect2>
+            <title>Problem: IMAP Authentication Fails</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> "Authentication failed" or "Invalid
+                credentials"</para>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>Test authentication directly:</para>
+                    <screen>$> doveadm auth test username password</screen>
+                    <para>This will show if Dovecot can authenticate the user</para>
+                </listitem>
+                <listitem>
+                    <para>Check authentication mechanisms are enabled:</para>
+                    <screen>$> doveconf auth_mechanisms
+# Should include: plain login</screen>
+                </listitem>
+                <listitem>
+                    <para>Verify PAM authentication is working:</para>
+                    <screen>$> sudo grep dovecot /var/log/messages
+$> ls -l /etc/pam.d/dovecot</screen>
+                </listitem>
+                <listitem>
+                    <para>Check user exists and maildir is accessible:</para>
+                    <screen>$> id username
+$> ls -la /home/username/Maildir</screen>
+                </listitem>
+                <listitem>
+                    <para>Review authentication logs:</para>
+                    <screen>$> sudo grep "auth.*failed" /var/log/mail.warn | tail -20</screen>
+                </listitem>
+            </orderedlist>
+        </sect2>
+        
+        <sect2>
+            <title>Problem: Maildir Permission Errors</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> "Permission denied" errors when
+                accessing mailboxes</para>
+            <para><emphasis role="bold">Solution:</emphasis></para>
+            <para>Check and fix maildir permissions:</para>
+            <screen>$> ls -la /home/username/Maildir
+# Maildir should be owned by the user
+$> sudo chown -R username:username /home/username/Maildir
+$> sudo chmod -R 700 /home/username/Maildir</screen>
+            <para>Verify Dovecot configuration for maildir location:</para>
+            <screen>$> doveconf mail_location
+# Should show: maildir:~/Maildir</screen>
+        </sect2>
+        
+        <sect2>
+            <title>Problem: Dovecot Index Corruption</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> Missing messages, "Internal error
+                occurred"</para>
+            <para><emphasis role="bold">Solution:</emphasis></para>
+            <para>Dovecot's index files can occasionally become corrupted. Delete them - they'll be
+                recreated:</para>
+            <screen>$> rm -rf /home/username/Maildir/dovecot.index*
+$> rm -rf /home/username/Maildir/.*/dovecot.index*</screen>
+            <para>Alternatively, use doveadm to force index regeneration:</para>
+            <screen>$> doveadm force-resync -u username INBOX
+$> doveadm force-resync -u username '*'</screen>
+        </sect2>
+    </sect1>
+    
+    <sect1>
+        <title>SSL/TLS Certificate Issues</title>
+        
+        <sect2>
+            <title>Problem: Certificate Warnings in Mail Clients</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> "Certificate not trusted" or
+                "Certificate name mismatch"</para>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>Self-signed certificate not imported into client:</para>
+                    <para>Import the CA certificate (<filename>ca-cert.pem</filename>) into your
+                        mail client or system trust store (see <xref
+                            xlink:href="#appendix.openssl"/>)</para>
+                </listitem>
+                <listitem>
+                    <para>Certificate Common Name (CN) doesn't match server name:</para>
+                    <screen>$> openssl x509 -in /etc/ssl/certs/dovecot.pem -noout -subject</screen>
+                    <para>The CN must match the hostname or IP address you're connecting to</para>
+                </listitem>
+                <listitem>
+                    <para>Certificate has expired:</para>
+                    <screen>$> openssl x509 -in /etc/ssl/certs/dovecot.pem -noout -dates</screen>
+                    <para>Create new certificates if expired</para>
+                </listitem>
+                <listitem>
+                    <para>Using IP address instead of hostname:</para>
+                    <para>Create certificate with IP address in Subject Alternative Name (SAN) field
+                        - see <xref xlink:href="#appendix.openssl"/></para>
+                </listitem>
+            </orderedlist>
+        </sect2>
+        
+        <sect2>
+            <title>Problem: SSL/TLS Connection Fails</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> "SSL handshake failed" or connection
+                drops immediately</para>
+            <para><emphasis role="bold">Diagnosis:</emphasis></para>
+            <screen>$> openssl s_client -connect mail.example.com:993 -showcerts
+$> openssl s_client -connect mail.example.com:587 -starttls smtp</screen>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>Certificate and key file mismatch:</para>
+                    <screen>$> openssl x509 -noout -modulus -in /etc/ssl/certs/dovecot.pem | openssl md5
+$> openssl rsa -noout -modulus -in /etc/ssl/private/dovecot.key | openssl md5
+# The checksums should match</screen>
+                </listitem>
+                <listitem>
+                    <para>Wrong certificate file path in configuration:</para>
+                    <screen>$> doveconf ssl_cert ssl_key
+$> postconf smtpd_tls_cert_file smtpd_tls_key_file</screen>
+                    <para>Verify files exist at specified paths</para>
+                </listitem>
+                <listitem>
+                    <para>Key file permissions too permissive:</para>
+                    <screen>$> ls -l /etc/ssl/private/dovecot.key
+# Should be -rw------- (600) or -rw-r----- (640)</screen>
+                </listitem>
+            </orderedlist>
+        </sect2>
+    </sect1>
+    
+    <sect1>
+        <title>Apache and Roundcube Issues</title>
+        
+        <sect2>
+            <title>Problem: Cannot Access Roundcube Web Interface</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> "Connection refused" or "Page not
+                found"</para>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>Apache not running:</para>
+                    <screen>$> sudo systemctl status apache2
+$> sudo systemctl start apache2</screen>
+                </listitem>
+                <listitem>
+                    <para>Wrong URL:</para>
+                    <para>Try: <literal>https://your-server-ip/roundcube</literal></para>
+                </listitem>
+                <listitem>
+                    <para>Alias not configured:</para>
+                    <screen>$> grep -i alias /etc/apache2/conf.d/roundcube.conf</screen>
+                    <para>Should contain: <literal>Alias /roundcube
+                        /srv/www/htdocs/roundcube</literal></para>
+                </listitem>
+                <listitem>
+                    <para>Check Apache error log:</para>
+                    <screen>$> sudo tail -50 /var/log/apache2/error_log</screen>
+                </listitem>
+            </orderedlist>
+        </sect2>
+        
+        <sect2>
+            <title>Problem: Roundcube Shows Blank Page or PHP Errors</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> White/blank page, or PHP error
+                messages</para>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>PHP not properly configured:</para>
+                    <screen>$> grep -i LoadModule /etc/apache2/conf.d/php5.conf
+$> sudo a2enmod php5</screen>
+                </listitem>
+                <listitem>
+                    <para>Database connection failed:</para>
+                    <para>Check <filename>/srv/www/htdocs/roundcube/config/config.inc.php</filename>
+                        database settings</para>
+                    <screen>$> mysql -u roundcube -p roundcube
+# Test if database is accessible</screen>
+                </listitem>
+                <listitem>
+                    <para>File permissions:</para>
+                    <screen>$> ls -la /srv/www/htdocs/roundcube/
+# temp and logs directories must be writable by Apache
+$> sudo chown -R wwwrun:www /srv/www/htdocs/roundcube/temp
+$> sudo chown -R wwwrun:www /srv/www/htdocs/roundcube/logs</screen>
+                </listitem>
+                <listitem>
+                    <para>Check Roundcube logs:</para>
+                    <screen>$> sudo tail -50 /srv/www/htdocs/roundcube/logs/errors</screen>
+                </listitem>
+            </orderedlist>
+        </sect2>
+        
+        <sect2>
+            <title>Problem: Roundcube Cannot Connect to IMAP Server</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> "Connection to IMAP server failed"
+                error in Roundcube</para>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>Check IMAP settings in Roundcube config:</para>
+                    <para>Edit
+                        <filename>/srv/www/htdocs/roundcube/config/config.inc.php</filename>:</para>
+                    <programlisting>$config['default_host'] = 'ssl://localhost:993';</programlisting>
+                </listitem>
+                <listitem>
+                    <para>SSL certificate verification failing:</para>
+                    <para>Temporarily disable verification to test:</para>
+                    <programlisting>$config['imap_conn_options'] = array(
+    'ssl' => array(
+        'verify_peer'       => false,
+        'verify_peer_name'  => false,
+    ),
+);</programlisting>
+                    <para>If this fixes it, the issue is certificate trust</para>
+                </listitem>
+                <listitem>
+                    <para>Dovecot not allowing connections from localhost:</para>
+                    <screen>$> doveconf | grep listen</screen>
+                </listitem>
+            </orderedlist>
+        </sect2>
+    </sect1>
+    
+    <sect1>
+        <title>Network and Connectivity Issues</title>
+        
+        <sect2>
+            <title>Problem: Cannot Connect from Outside Network</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> Works locally but not from
+                external networks</para>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>Port forwarding not configured:</para>
+                    <para>Check router port forwarding rules (see <xref linkend="section.firewall"
+                        />)</para>
+                </listitem>
+                <listitem>
+                    <para>ISP blocking ports:</para>
+                    <para>Some ISPs block port 25. Test from external location:</para>
+                    <screen>$> telnet your-external-ip 25
+$> telnet your-external-ip 587
+$> telnet your-external-ip 993</screen>
+                </listitem>
+                <listitem>
+                    <para>Dynamic DNS not updating:</para>
+                    <para>If using dynamic DNS, verify your current IP is correct</para>
+                </listitem>
+                <listitem>
+                    <para>Firewall blocking external connections:</para>
+                    <screen>$> sudo iptables -L -n -v | grep &lt;port-number></screen>
+                </listitem>
+            </orderedlist>
+        </sect2>
+        
+        <sect2>
+            <title>Problem: DNS Resolution Failures</title>
+            <para><emphasis role="bold">Symptoms:</emphasis> Cannot send to external domains</para>
+            <para><emphasis role="bold">Diagnosis and Solution:</emphasis></para>
+            <screen>$> host google.com
+$> dig MX gmail.com</screen>
+            <para>If DNS lookup fails:</para>
+            <screen>$> cat /etc/resolv.conf
+# Should contain valid nameserver entries
+nameserver 8.8.8.8
+nameserver 8.8.4.4</screen>
+            <para>Test if Postfix can resolve domains:</para>
+            <screen>$> postfix check
+$> postfix reload</screen>
+        </sect2>
+    </sect1>
+    
+    <sect1>
+        <title>Performance Issues</title>
+        
+        <sect2>
+            <title>Problem: Slow Mail Delivery</title>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>DNS lookups timing out:</para>
+                    <para>Add faster DNS servers to <filename>/etc/resolv.conf</filename></para>
+                </listitem>
+                <listitem>
+                    <para>Greylisting on remote server:</para>
+                    <para>This is normal - remote server delays first delivery attempt for spam
+                        protection</para>
+                </listitem>
+                <listitem>
+                    <para>Disk I/O bottleneck:</para>
+                    <screen>$> iostat -x 2 5
+$> df -h</screen>
+                    <para>Check if disk is full or slow</para>
+                </listitem>
+            </orderedlist>
+        </sect2>
+        
+        <sect2>
+            <title>Problem: Roundcube Slow or Unresponsive</title>
+            <para><emphasis role="bold">Possible Causes and Solutions:</emphasis></para>
+            <orderedlist>
+                <listitem>
+                    <para>Database not optimized:</para>
+                    <screen>$> mysql -u root -p roundcube
+mysql> OPTIMIZE TABLE cache, cache_index, cache_messages, session;</screen>
+                </listitem>
+                <listitem>
+                    <para>No IMAP indexing in Dovecot:</para>
+                    <para>Enable full-text search plugin (see <xref linkend="chap.dovecot"
+                        />)</para>
+                </listitem>
+                <listitem>
+                    <para>PHP memory limit too low:</para>
+                    <para>Edit <filename>/etc/php5/apache2/php.ini</filename>:</para>
+                    <programlisting>memory_limit = 128M</programlisting>
+                    <screen>$> sudo systemctl restart apache2</screen>
+                </listitem>
+            </orderedlist>
+        </sect2>
+    </sect1>
+    
+    <sect1>
+        <title>When All Else Fails</title>
+        <para>If you've tried everything and still have issues:</para>
+        <orderedlist>
+            <listitem>
+                <para><emphasis role="bold">Check the documentation</emphasis> - Review relevant
+                    sections of this guide and official documentation</para>
+            </listitem>
+            <listitem>
+                <para><emphasis role="bold">Search mailing lists and forums</emphasis> - Your
+                    problem has likely been encountered and solved before</para>
+            </listitem>
+            <listitem>
+                <para><emphasis role="bold">Enable debug logging</emphasis> - Increase log verbosity
+                    to get more details:</para>
+                <para>For Postfix, add to <filename>/etc/postfix/main.cf</filename>:</para>
+                <programlisting>debug_peer_list = domain-or-ip-to-debug
+debug_peer_level = 2</programlisting>
+                <para>For Dovecot, in <filename>/etc/dovecot/conf.d/10-logging.conf</filename>:</para>
+                <programlisting>auth_verbose = yes
+auth_debug = yes
+mail_debug = yes</programlisting>
+            </listitem>
+            <listitem>
+                <para><emphasis role="bold">Test with minimal configuration</emphasis> - Start with
+                    a basic setup and add features incrementally</para>
+            </listitem>
+            <listitem>
+                <para><emphasis role="bold">Compare with working configuration</emphasis> - Set up a
+                    test server with default settings to compare</para>
+            </listitem>
+        </orderedlist>
+        <para>Remember: Most mail server problems come down to configuration syntax errors,
+            permission issues, or firewall rules. Systematic checking of these areas will solve the
+            vast majority of problems.</para>
+    </sect1>
+</appendix>

@@ -8,14 +8,14 @@
     <info>
         <title>The Complete OpenSuSE Mail Server</title>
         <subtitle>... or how  to really understand a full IMAP/SMTP/HTTPS/Webmail setup</subtitle>
-        <releaseinfo>Version 0.1</releaseinfo>
+        <releaseinfo>Version 1.0.0</releaseinfo>
         <author>
             <personname>Johan Persson</personname>
             <email>johan162@gmail.com</email>
         </author>
 
         <copyright>
-            <year>2011</year>
+            <year>2010-2012</year>
             <holder>Johan Persson</holder>
         </copyright>
     </info>
@@ -31,6 +31,8 @@
     <xi:include href="sections/section09.xml" parse="xml"/>
     <xi:include href="sections/section10.xml" parse="xml"/>
     <xi:include href="sections/section11.xml" parse="xml"/>
+    <xi:include href="sections/section12.xml" parse="xml"/>
+    <xi:include href="sections/section13.xml" parse="xml"/>
      
     <xi:include href="appendixes/appendix01-postfix-examples.xml" parse="xml"/>
     <xi:include href="appendixes/appendix02-procmail.xml" parse="xml"/>
@@ -38,5 +40,7 @@
     <xi:include href="appendixes/appendix04-postfix-complete.xml" parse="xml"/>
     <xi:include href="appendixes/appendix05-openssl.xml" parse="xml"/>
     <xi:include href="appendixes/appendix06-apache.xml" parse="xml"/>
+    <xi:include href="appendixes/appendix07-troubleshooting.xml" parse="xml"/>
+    <xi:include href="appendixes/appendix08-quickref.xml" parse="xml"/>
     
 </article>
