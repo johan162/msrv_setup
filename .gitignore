@@ -38,3 +38,4 @@ Temporary Items
 .idea/
 *.sublime-project
 *.sublime-workspace
+.collapsed.mailsetup-article.xml
