@@ -3,14 +3,13 @@
     * ==============================================================================
     * Customization layer for chunk XSL Docbook5 used to produce chunked HTML
     *    
-    * Revision: $Id: chunk.xsl 39 2012-01-14 19:40:38Z ljp $
     * ==============================================================================    
 -->
 <xsl:stylesheet 
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:d="http://docbook.org/ns/docbook"
     version="1.0">
-    <xsl:import href="/usr/share/xml/docbook/stylesheet/nwalsh/website/chunk-website.xsl"/>
+    <xsl:import href="http://docbook.sourceforge.net/release/xsl/current/website/chunk-website.xsl"/>
     <xsl:import href="common.xsl"/>    
     
     <xsl:param name="chunker.output.encoding" select="'UTF-8'" />

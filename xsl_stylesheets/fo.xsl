@@ -3,13 +3,12 @@
     * ==============================================================================
     * Customization layer for fo XSL Docbook5 used to produce PDF output
     *    
-    * Revision: $Id: fo.xsl 50 2012-01-25 01:54:48Z ljp $
     * ==============================================================================    
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:d="http://docbook.org/ns/docbook"
     version="1.0">
-    <xsl:import href="/usr/share/xml/docbook/stylesheet/nwalsh/fo/docbook.xsl"/>
+    <xsl:import href="http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl"/>
     <xsl:import href="common.xsl"/>
 
     <xsl:param name="paper.type" select="'A4'"/>
