@@ -26,6 +26,8 @@ RUN apk add --no-cache \
     # Fonts for PDF generation
     ttf-liberation \
     fontconfig \
+    # Pandoc for Markdown generation
+    pandoc \
     # wget for downloading tools
     wget \
     bash \

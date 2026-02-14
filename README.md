@@ -24,7 +24,7 @@
       - [Prerequisites](#prerequisites)
       - [Installing on macOS](#installing-on-macos)
       - [Installing on Linux (OpenSuSE/SUSE)](#installing-on-linux-opensusesuse)
-    - [MAkefile Build Targets](#makefile-build-targets)
+    - [Makefile Build Targets](#makefile-build-targets)
     - [Output Locations](#output-locations)
   - [Project Structure](#project-structure)
     - [DocBook Structure](#docbook-structure)
@@ -73,6 +73,7 @@ make docker-html       # Single-page HTML
 make docker-chunk      # Chunked HTML
 make docker-pdf        # PDF (with Apache FOP)
 make docker-epub       # EPUB e-book
+make docker-markdown   # GitHub Flavored Markdown
 
 # Verify EPUB file
 make docker-verify-epub
@@ -86,6 +87,7 @@ The container includes all necessary dependencies:
 - xsltproc and DocBook XSL stylesheets with proper XML catalogs
 - Apache FOP 2.9 for PDF generation
 - Ruby dbtoepub for EPUB generation
+- Pandoc 3.9 for Markdown generation
 - EPUBCheck 5.1.0 for EPUB validation
 - Liberation fonts for PDF rendering
 
@@ -166,6 +168,7 @@ make docker-html       # Single-page HTML
 make docker-chunk      # Chunked HTML  
 make docker-pdf        # PDF (with Apache FOP)
 make docker-epub       # EPUB e-book
+make docker-markdown   # GitHub Flavored Markdown
 
 # Verify EPUB with epubcheck
 make docker-verify-epub
@@ -176,6 +179,7 @@ The container includes:
 - xsltproc and DocBook XSL stylesheets with proper XML catalogs
 - Apache FOP 2.9 for PDF generation
 - Ruby dbtoepub for EPUB generation
+- Pandoc 3.9 for Markdown generation
 - EPUBCheck 5.1.0 for EPUB validation
 - Liberation fonts for PDF rendering
 
@@ -193,6 +197,7 @@ To build the documentation, you need:
 - **DocBook XSL Stylesheets** - Standard stylesheets for DocBook transformation
 - **Apache FOP** - For PDF generation (optional)
 - **dbtoepub** - For EPUB generation (optional)
+- **Pandoc** - For Markdown generation (optional)
 - **tidy** - HTML tidying utility (optional but recommended)
 
 #### Installing on macOS
@@ -203,6 +208,9 @@ brew install docbook-xsl libxslt
 
 # Optional for PDF generation
 brew install fop
+
+# Optional for Markdown generation
+brew install pandoc
 
 # Set DocBook catalog (may be needed)
 export XML_CATALOG_FILES="/usr/local/etc/xml/catalog"
@@ -219,9 +227,12 @@ zypper install fop
 
 # Optional for EPUB
 zypper install dbtoepub
+
+# Optional for Markdown
+zypper install pandoc
 ```
 
-### MAkefile Build Targets
+### Makefile Build Targets
 
 ```bash
 # Generate single-page HTML (default)
@@ -235,6 +246,9 @@ make pdf
 
 # Generate EPUB
 make epub
+
+# Generate Markdown (GitHub Flavored Markdown with extracted images)
+make markdown
 
 # Generate all formats
 make all
@@ -258,6 +272,7 @@ Generated documentation appears in the `output/` directory:
 - `output/chunkhtml/` - Chunked HTML output
 - `output/pdf/article.pdf` - PDF version
 - `output/epub/mailsetup-article.epub` - EPUB version
+- `output/markdown/mailsetup-article.md` - GitHub Flavored Markdown with images
 
 ## Project Structure
 

@@ -34,12 +34,14 @@ HTML_DIR := $(OUTPUT_DIR)/html
 CHUNK_DIR := $(OUTPUT_DIR)/chunkhtml
 PDF_DIR := $(OUTPUT_DIR)/pdf
 EPUB_DIR := $(OUTPUT_DIR)/epub
+MARKDOWN_DIR := $(OUTPUT_DIR)/markdown
 TMP_DIR := tmp
 
 # Tools
 XSLTPROC := xsltproc
 FOP := fop
 DBTOEPUB := dbtoepub
+PANDOC := pandoc
 TIDY := tidy
 XMLLINT := xmllint
 
@@ -75,6 +77,7 @@ help:
 	@echo "  make chunk      - Generate chunked HTML"
 	@echo "  make pdf        - Generate PDF (requires Apache FOP)"
 	@echo "  make epub       - Generate EPUB"
+	@echo "  make markdown   - Generate Markdown (requires Pandoc)"
 	@echo "  make all        - Generate all formats"
 	@echo "  make validate   - Validate XML against DocBook schema"
 	@echo "  make clean      - Remove generated files"
@@ -85,6 +88,7 @@ help:
 	@echo "  make docker-chunk       - Generate chunked HTML in container"
 	@echo "  make docker-pdf         - Generate PDF in container"
 	@echo "  make docker-epub        - Generate EPUB in container"
+	@echo "  make docker-markdown    - Generate Markdown in container"
 	@echo "  make docker-all         - Generate all formats in container"
 	@echo "  make docker-validate    - Validate XML in container"
 	@echo "  make docker-verify-epub - Verify EPUB file with epubcheck"
@@ -93,7 +97,7 @@ help:
 	@echo "Output will be generated in the output/ directory"
 
 # Create output directory structure
-$(HTML_DIR) $(CHUNK_DIR) $(PDF_DIR) $(EPUB_DIR) $(TMP_DIR):
+$(HTML_DIR) $(CHUNK_DIR) $(PDF_DIR) $(EPUB_DIR) $(MARKDOWN_DIR) $(TMP_DIR):
 	@mkdir -p $@
 
 # Validate XML against DocBook schema
@@ -227,9 +231,39 @@ epub: $(EPUB_DIR)
 		-o $(EPUB_DIR)/$(MAIN_DOCUMENT_STRIP).epub
 	@echo "EPUB documentation generated in $(EPUB_DIR)/$(MAIN_DOCUMENT_STRIP).epub"
 
+# Generate Markdown
+.PHONY: markdown
+markdown: $(MARKDOWN_DIR) $(TMP_DIR)
+	@echo "Generating Markdown..."
+	@# Check if pandoc is available
+	@if ! command -v $(PANDOC) >/dev/null 2>&1; then \
+		echo "Error: pandoc not found. Install it to generate Markdown."; \
+		echo "On macOS: brew install pandoc"; \
+		echo "On Linux: apt-get install pandoc or dnf install pandoc"; \
+		exit 1; \
+	fi
+	@# Expand XIncludes first using xmllint
+	@$(XMLLINT) --xinclude --output $(TMP_DIR)/$(MAIN_DOCUMENT) $(MAIN_DOCUMENT)
+	@# Copy figures to tmp for relative path resolution
+	@mkdir -p $(TMP_DIR)/figures
+	@cp -f $(FIGURES) $(TMP_DIR)/figures/ 2>/dev/null || true
+	@# Convert DocBook to Markdown using Pandoc (run from tmp dir for image paths)
+	@cd $(TMP_DIR) && $(PANDOC) --from=docbook --to=gfm \
+		--standalone \
+		--extract-media=../$(MARKDOWN_DIR) \
+		--output=../$(MARKDOWN_DIR)/$(MAIN_DOCUMENT_STRIP).md \
+		$(MAIN_DOCUMENT)
+	@# Fix image paths - remove the relative directory prefix since images are in same dir as markdown
+	@# Use a portable sed approach that works on both macOS and Linux
+	@sed 's|src="../output/markdown/|src="|g' $(MARKDOWN_DIR)/$(MAIN_DOCUMENT_STRIP).md > $(MARKDOWN_DIR)/$(MAIN_DOCUMENT_STRIP).md.tmp
+	@mv $(MARKDOWN_DIR)/$(MAIN_DOCUMENT_STRIP).md.tmp $(MARKDOWN_DIR)/$(MAIN_DOCUMENT_STRIP).md
+	@# Clean up temporary expanded XML file
+	@rm -f $(TMP_DIR)/$(MAIN_DOCUMENT)
+	@echo "Markdown documentation generated in $(MARKDOWN_DIR)/$(MAIN_DOCUMENT_STRIP).md"
+
 # Generate all formats
 .PHONY: all
-all: htmlfancy chunk pdf epub
+all: htmlfancy chunk pdf epub markdown
 	@echo "All documentation formats generated successfully."
 
 # Generate image list (utility target)
@@ -247,6 +281,7 @@ clean:
 	@rm -rf $(OUTPUT_DIR)
 	@rm -rf $(TMP_DIR)
 	@rm -f imglist.txt
+	@rm -f .collapsed.*.xml
 	@echo "Clean complete."
 
 # Check for required tools
@@ -326,6 +361,13 @@ docker-epub: check-container-runtime
 	@echo "Generating EPUB in container..."
 	$(CONTAINER_RUNTIME) run $(CONTAINER_RUN_OPTS) $(CONTAINER_FULL_IMAGE) make epub
 	@echo "EPUB generated successfully."
+
+# Generate Markdown in container
+.PHONY: docker-markdown
+docker-markdown: check-container-runtime
+	@echo "Generating Markdown in container..."
+	$(CONTAINER_RUNTIME) run $(CONTAINER_RUN_OPTS) $(CONTAINER_FULL_IMAGE) make markdown
+	@echo "Markdown generated successfully."
 
 # Generate all formats in container
 .PHONY: docker-all
