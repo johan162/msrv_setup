@@ -10,6 +10,7 @@
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Quick Start](#quick-start)
+    - [Building with Docker/Podman (Recommended)](#building-with-dockerpodman-recommended)
   - [What This Document Covers](#what-this-document-covers)
   - [Why This Guide Matters](#why-this-guide-matters)
     - [The Need for Self-Hosted Mail](#the-need-for-self-hosted-mail)
@@ -25,7 +26,9 @@
     - [Web Services](#web-services)
     - [Supporting Infrastructure](#supporting-infrastructure)
   - [Building the Documentation](#building-the-documentation)
-    - [Prerequisites](#prerequisites)
+    - [Option 1: Docker/Podman (Recommended - No Local Dependencies)](#option-1-dockerpodman-recommended---no-local-dependencies)
+    - [Option 2: Local Build (Manual Dependency Installation)](#option-2-local-build-manual-dependency-installation)
+      - [Prerequisites](#prerequisites)
       - [Installing on macOS](#installing-on-macos)
       - [Installing on Linux (OpenSuSE/SUSE)](#installing-on-linux-opensusesuse)
     - [Build Targets](#build-targets)
@@ -64,6 +67,37 @@ make all
 ```
 
 The documentation comprises **over 4,700 lines** of detailed XML covering 11 main sections and 6 comprehensive appendices with complete configuration examples.
+
+### Building with Docker/Podman (Recommended)
+
+If you don't want to install dependencies on your local system, you can build all formats using Docker or Podman:
+
+```bash
+# Build the container image (one-time setup)
+make docker-build
+
+# Generate all formats in container
+make docker-all
+
+# Or generate specific formats
+make docker-html       # Single-page HTML
+make docker-chunk      # Chunked HTML
+make docker-pdf        # PDF (with Apache FOP)
+make docker-epub       # EPUB e-book
+
+# Verify EPUB file
+make docker-verify-epub
+
+# Open interactive shell in container
+make docker-shell
+```
+
+The Docker approach:
+- ✅ No local dependencies needed (except Docker/Podman)
+- ✅ Consistent build environment across all platforms
+- ✅ Includes all tools: xsltproc, Apache FOP, dbtoepub, epubcheck
+- ✅ Properly configured XML catalogs
+- ✅ Works identically on macOS, Linux, and Windows
 
 ## What This Document Covers
 
@@ -182,9 +216,42 @@ This is why many people choose hosted solutions - the complexity is real and sig
 
 ## Building the Documentation
 
-This documentation is written in **DocBook 5 XML**, an industry-standard format for technical documentation. DocBook allows generating multiple output formats (HTML, PDF, EPUB) from a single source.
+### Option 1: Docker/Podman (Recommended - No Local Dependencies)
 
-### Prerequisites
+Build all formats in an isolated container without installing any dependencies on your system:
+
+```bash
+# One-time: Build the container image
+make docker-build
+
+# Generate all formats
+make docker-all
+
+# Or generate specific formats
+make docker-html       # Single-page HTML
+make docker-chunk      # Chunked HTML  
+make docker-pdf        # PDF (with Apache FOP)
+make docker-epub       # EPUB e-book
+
+# Verify EPUB with epubcheck
+make docker-verify-epub
+```
+
+The container includes:
+- Alpine Linux 3.19 (minimal base)
+- xsltproc and DocBook XSL stylesheets with proper XML catalogs
+- Apache FOP 2.9 for PDF generation
+- Ruby dbtoepub for EPUB generation
+- EPUBCheck 5.1.0 for EPUB validation
+- Liberation fonts for PDF rendering
+
+**Benefits**: No local dependencies, consistent across all platforms, includes validation tools.
+
+### Option 2: Local Build (Manual Dependency Installation)
+
+If you prefer to build locally without Docker:
+
+#### Prerequisites
 
 To build the documentation, you need:
 

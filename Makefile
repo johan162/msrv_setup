@@ -59,6 +59,13 @@ CSS_IMAGES := $(wildcard css_stylesheets/img/*)
 # Default target
 .DEFAULT_GOAL := html
 
+# Docker/Podman configuration
+CONTAINER_RUNTIME := $(shell command -v podman 2>/dev/null || command -v docker 2>/dev/null)
+CONTAINER_IMAGE := docbook-builder
+CONTAINER_TAG := latest
+CONTAINER_FULL_IMAGE := $(CONTAINER_IMAGE):$(CONTAINER_TAG)
+CONTAINER_RUN_OPTS := --rm -v $(CURDIR):/docs:z -w /docs
+
 # Help target
 .PHONY: help
 help:
@@ -70,6 +77,17 @@ help:
 	@echo "  make all        - Generate all formats"
 	@echo "  make validate   - Validate XML against DocBook schema"
 	@echo "  make clean      - Remove generated files"
+	@echo ""
+	@echo "Docker/Podman targets (no local dependencies needed):"
+	@echo "  make docker-build       - Build the Docker/Podman image"
+	@echo "  make docker-html        - Generate HTML in container"
+	@echo "  make docker-chunk       - Generate chunked HTML in container"
+	@echo "  make docker-pdf         - Generate PDF in container"
+	@echo "  make docker-epub        - Generate EPUB in container"
+	@echo "  make docker-all         - Generate all formats in container"
+	@echo "  make docker-validate    - Validate XML in container"
+	@echo "  make docker-verify-epub - Verify EPUB file with epubcheck"
+	@echo "  make docker-shell       - Open shell in container"
 	@echo ""
 	@echo "Output will be generated in the output/ directory"
 
@@ -256,5 +274,94 @@ check-tools:
 	fi
 	@echo "Tool check complete."
 
+# ============================================================================
+# Docker/Podman targets for containerized builds
+# ============================================================================
+
+# Check if container runtime is available
+.PHONY: check-container-runtime
+check-container-runtime:
+	@if [ -z "$(CONTAINER_RUNTIME)" ]; then \
+		echo "Error: Neither podman nor docker found."; \
+		echo "Please install Podman or Docker to use containerized builds."; \
+		exit 1; \
+	fi
+	@echo "Using container runtime: $(CONTAINER_RUNTIME)"
+
+# Build the Docker/Podman image
+.PHONY: docker-build
+docker-build: check-container-runtime
+	@echo "Building container image $(CONTAINER_FULL_IMAGE)..."
+	$(CONTAINER_RUNTIME) build -t $(CONTAINER_FULL_IMAGE) .
+	@echo "Container image built successfully."
+
+# Generate HTML in container
+.PHONY: docker-html
+docker-html: check-container-runtime
+	@echo "Generating HTML in container..."
+	$(CONTAINER_RUNTIME) run $(CONTAINER_RUN_OPTS) $(CONTAINER_FULL_IMAGE) make html
+	@echo "HTML generated successfully."
+
+# Generate chunked HTML in container
+.PHONY: docker-chunk
+docker-chunk: check-container-runtime
+	@echo "Generating chunked HTML in container..."
+	$(CONTAINER_RUNTIME) run $(CONTAINER_RUN_OPTS) $(CONTAINER_FULL_IMAGE) make chunk
+	@echo "Chunked HTML generated successfully."
+
+# Generate PDF in container
+.PHONY: docker-pdf
+docker-pdf: check-container-runtime
+	@echo "Generating PDF in container..."
+	$(CONTAINER_RUNTIME) run $(CONTAINER_RUN_OPTS) $(CONTAINER_FULL_IMAGE) make pdf
+	@echo "PDF generated successfully."
+
+# Generate EPUB in container
+.PHONY: docker-epub
+docker-epub: check-container-runtime
+	@echo "Generating EPUB in container..."
+	$(CONTAINER_RUNTIME) run $(CONTAINER_RUN_OPTS) $(CONTAINER_FULL_IMAGE) make epub
+	@echo "EPUB generated successfully."
+
+# Generate all formats in container
+.PHONY: docker-all
+docker-all: check-container-runtime
+	@echo "Generating all formats in container..."
+	$(CONTAINER_RUNTIME) run $(CONTAINER_RUN_OPTS) $(CONTAINER_FULL_IMAGE) make all
+	@echo "All formats generated successfully."
+
+# Validate XML in container
+.PHONY: docker-validate
+docker-validate: check-container-runtime
+	@echo "Validating XML in container..."
+	$(CONTAINER_RUNTIME) run $(CONTAINER_RUN_OPTS) $(CONTAINER_FULL_IMAGE) make validate
+
+# Verify EPUB file with epubcheck
+.PHONY: docker-verify-epub
+docker-verify-epub: check-container-runtime
+	@echo "Verifying EPUB file with epubcheck..."
+	@if [ ! -f $(EPUB_DIR)/$(MAIN_DOCUMENT_STRIP).epub ]; then \
+		echo "Error: EPUB file not found. Run 'make docker-epub' first."; \
+		exit 1; \
+	fi
+	$(CONTAINER_RUNTIME) run $(CONTAINER_RUN_OPTS) $(CONTAINER_FULL_IMAGE) \
+		epubcheck $(EPUB_DIR)/$(MAIN_DOCUMENT_STRIP).epub
+	@echo "EPUB verification complete."
+
+# Open interactive shell in container
+.PHONY: docker-shell
+docker-shell: check-container-runtime
+	@echo "Opening shell in container..."
+	$(CONTAINER_RUNTIME) run -it $(CONTAINER_RUN_OPTS) $(CONTAINER_FULL_IMAGE) /bin/bash
+
+# Clean container image
+.PHONY: docker-clean
+docker-clean: check-container-runtime
+	@echo "Removing container image..."
+	$(CONTAINER_RUNTIME) rmi $(CONTAINER_FULL_IMAGE) || true
+	@echo "Container image removed."
+
 # Phony targets
 .PHONY: help html htmlfancy chunk pdf epub all validate clean imglist check-tools
+.PHONY: check-container-runtime docker-build docker-html docker-chunk docker-pdf
+.PHONY: docker-epub docker-all docker-validate docker-verify-epub docker-shell docker-clean
