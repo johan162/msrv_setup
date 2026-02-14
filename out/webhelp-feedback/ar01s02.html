@@ -1,0 +1,290 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Overview of the components</title><meta name="generator" content="DocBook XSL Stylesheets V1.77.1"/><link rel="home" href="oxygen-main.html" title="The Complete OpenSuSE Mail Server"/><link rel="up" href="oxygen-main.html" title="The Complete OpenSuSE Mail Server"/><link rel="prev" href="oxygen-main.html" title="The Complete OpenSuSE Mail Server"/><link rel="next" href="ar01s03.html" title="The setup process"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><link rel="stylesheet" type="text/css" href="oxygen-webhelp/resources/css/webhelp_topic.css"/>                           <link rel="stylesheet" type="text/css" href="oxygen-webhelp/resources/css/comments.css"/>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/jquery.js"> </script>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/jquery-ui.custom.min.js"> </script>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/frames_redirect.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/localization/strings.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/comments-functions.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/php/cnf.php"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/init.js"> </script>                                        <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/localization/strings.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/comments-functions.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/php/cnf.php"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/init.js"> </script>
+<script type="text/javascript"><!--
+    var prefix = "oxygen-main";
+    var ratingFile = "";
+    redirectToToc(window.location.search);
+    function highlightSearchTerm(){
+        if(parent.termsToHighlight != null){
+        // highlight each term in the content view  
+          for(i = 0 ; i < parent.termsToHighlight.length ; i++){        
+              $('*', window.parent.contentwin.document).highlight(parent.termsToHighlight[i]);
+          }
+        }
+    }
+//--></script>
+</head><body onload="highlightSearchTerm()"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Overview of the components</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="oxygen-main.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s03.html">Next</a></td></tr></table><hr/></div><span class="frames"><script type="text/javascript"><!--                    
+									 if (top === self) { 
+							        document.write("<div class='wFrames'><a href=" + getPath(location.pathname) + ">With Frames</a></div>");							
+						        } else {
+						          //document.write("<div class='wFramesPerma'><a href=" + getPath(location.pathname) + " target='_top' title='link to this page'>Link</a></div>");						
+						        }       
+                  --></script></span>
+<div class="sect1" id="d5e314"><div class="titlepage"><div><div><h2 class="title" style="clear: both">Overview of the components</h2></div></div></div><p>Unfortunately there isn't one simple program that will do all what we need. Instead we
+        will need a number of components to achieve our goal. A server setup with IMAP/SMTP has some
+        reputation of being “black-magic” to setup. However, this is mostly based on the fact that
+        there are many different parts involved and misunderstanding the role of (or interactions
+        between) the different actors will definitely make the process seem like black magic. So
+        lets start by discussing the parts involved and give a high level logical overview on how
+        the parts interact. For a pictorial overview please refer to <a class="xref" href="ar01s02.html#fig.mail-overview" title="Figure 2. Mail server overview">Figure 2, “Mail server overview”</a></p><div class="figure" id="fig.mail-overview"><p class="title"><strong>Figure 2. Mail server overview</strong></p><div class="figure-contents"><div class="mediaobject"><img src="figures/mail-overview.png" width="600" alt="Mail server overview"/></div></div></div><br class="figure-break"/><div class="sect2" id="d5e325"><div class="titlepage"><div><div><h3 class="title">Postfix</h3></div></div></div><p>This is the <acronym class="acronym">SMTP/SMTPD</acronym> server/daemon that handles the mail
+            protocols we will be using. The <span class="application">Postfix</span> server is abstractly
+            known as an MTA (<span class="italic">Mail Transfer Agent</span>) in mail lingo.
+            These are the backbones of message transfer over the internet. The role of the MTAs are
+            to receive and forward messages to other MTAs depending on the end address. This
+            forwarding continues until the message reaches the server that is responsible for the
+            domain the message is addressed to. Once the message is at its final destination it gets
+            delivered to the appropriate user in that domain.</p><p>The headers in a typical message will show which MTAs have been passed in the process
+            of delivering the mail from the sender to the recipient. </p><p>Initially a user creates a message with some mail client, a mail client is abstractly
+            known as <acronym class="acronym">MUA</acronym>, <span class="italic">Mail User Agent</span>)
+            examples are (for example) <span class="application">KMail</span>,
+                <span class="application">Thunderbird</span> or <span class="application">Roundcube</span>. The
+                <acronym class="acronym">MUA</acronym> initially connects to a specified <acronym class="acronym">MTA</acronym> that
+            receives the message. The <acronym class="acronym">MTA</acronym> examines the headers in the mail and
+            determines if it should forward the message to some other <acronym class="acronym">MTA</acronym> or if
+            the message is to be locally delivered.</p><p>The reason for using this abstract language instead of referring to the specific
+            programs we are using is to be able to discuss mails without referring to specific
+            protocols or applications. </p><p>All of the above is relevant only to officially registered mail servers for a specific
+            domain. These mail serves are recognized in the <acronym class="acronym">DNS</acronym> system with a so
+            called <acronym class="acronym">MX</acronym> record (Mail eXchange). A home based server is normally not
+            an officially recognized mail server fresponsible for a particular domain. Instead the
+            home <acronym class="acronym">MTA</acronym> has to be configured to relay messages it receives from a
+            mail client on to an official mail server. This is normally the mail server at the
+                <acronym class="acronym">ISP</acronym>.</p><p>
+            </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/usr/local/share/oxygen14.0/frameworks/docbook/xsl/images/note.png"/></td><th align="left">Note</th></tr><tr><td align="left" valign="top"><p>For a proper email server connected to the internet with a MX (Mail eXchange)
+                    record in its DNS entry there are many more details to take into account. For
+                    example DKIM, FBL and SPF just to name a few techniques and methods a sysadmin
+                    has to be familiar with. Luckily for a home server we can ignore this.</p></td></tr></table></div><p>
+        </p><p>Postfix has two separate and distinct roles, one as a sending server, an
+                <acronym class="acronym">SMTP</acronym> server, and one as a receiving daemon, the
+                <acronym class="acronym">SMTPD</acronym> server. The <acronym class="acronym">SMTP</acronym> server is responsible
+            for sending mail to other servers while the receiving server is a daemon that waits for
+            connections from other servers (or clients) to receive messages. Any messages that
+            should be delivered locally will be stored the users mailbox and any message with a
+            recipient outside the domain the server is responsible for will be forwarded to the next
+            mail server depending on the end address. </p><p>By default the assigned port that the receiving <acronym class="acronym">MTA</acronym> server listens
+            on for non-encrypted messages are on port <code class="literal">25</code>, see figure <a class="xref" href="ar01s02.html#fig.smtp-smtpd" title="Figure 3. The dual role of postfix">Figure 3, “The dual role of postfix”</a>. This is the port that is used both when other MTAs
+            to talk to our server to forward messages as well as the port that mail clients connects
+            on to initially send messages created by the client. (This is how most setups work in
+            practice for historical reasons. However, this is not really in compliance with the
+            original RFCs. In the original specifications port 25 should only be used for
+                <acronym class="acronym">MTA</acronym> to <acronym class="acronym">MTA</acronym> communication and port
+                <code class="literal">587</code> should be used when a mail clients want to send a new message
+            to a <acronym class="acronym">MTA</acronym>.)</p><p>An important part of this setup is that the server will relay all incoming mails to
+            the <acronym class="acronym">ISP</acronym>s mail server which will then send it to the rest of the
+            world. Most <acronym class="acronym">ISP</acronym> will not allow neither outgoing nor incoming traffic
+            on port <code class="literal">25</code> to any other servers besides their own. This makes it
+            impossible to either directly send messages on port <code class="literal">25</code> to our server
+            from the ouside or to use any other mail server besides the <acronym class="acronym">ISP</acronym> to
+            forward our messages to. The ISPs block port <code class="literal">25</code> in an futile attempt
+            to block spams that are sent by Trojan mail servers running on unsuspecting servers. The
+            reason this is futile is that it is as easy to use another port on the server for the
+            spammers. The <acronym class="acronym">ISP</acronym> who is blocking of port <code class="literal">25</code> is
+            today mainly just an irritation for advanced users. It does not stop spam in any shape
+            or form. </p><p>What we need to do in order to send mail via our home server is to use another port,
+            connect to that other port and have postfix relay our message to be sent to our ISPs
+            official mail server. This will of course assume that we have told our
+                <acronym class="acronym">SMTPD</acronym> daemon to listen on that port. </p><p>The reasons we do not have our mail clients connect directly to our ISPs mail server
+            but instead going through our home server are twofold: </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>most <acronym class="acronym">ISP</acronym> does not allow connections to their mail server
+                    unless the connections originate from somewhere within their own network. That
+                    means it would be impossible to directly connect to the <acronym class="acronym">ISP</acronym>
+                    mail server from some device outside the subnet controlled by the
+                        <acronym class="acronym">ISP</acronym>, say a smartphone. </p></li><li class="listitem"><p>the second reason is that we want to be able to send local mails originating
+                    in our server (for example system mail) to a valid address (this will also
+                    require us to alias a local user to a real email address since most mail servers
+                    refuses to pass on messages with a bogus sender address, say
+                        "<code class="email">&lt;<a class="email" href="mailto:root@localhost">root@localhost</a>&gt;</code>")</p></li></ul></div><div class="figure" id="fig.smtp-smtpd"><p class="title"><strong>Figure 3. The dual role of postfix</strong></p><div class="figure-contents"><div class="mediaobject"><img src="figures/smtp-smtpd.png" width="432" alt="The dual role of postfix"/></div></div></div><br class="figure-break"/></div><div class="sect2" id="d5e391"><div class="titlepage"><div><div><h3 class="title">Dovecot</h3></div></div></div><p>All messages needs to be stored in a structured way on disk for each user. The two
+            formats mostly used in the Unix/Linux world are. </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>"<acronym class="acronym">maildir</acronym>" format. This format stores all messages as
+                    individual files in a directory structure corresponding to the mail folders
+                    defined.</p></li><li class="listitem"><p>"<acronym class="acronym">mbox</acronym>" format. This format stores all messages lumped
+                    together in one file. Historically this is the "original" message storing
+                    format. For all practical purposes this should not be usedin new setups.</p></li></ul></div><p>For all modern installation it is strongly recommended to use the
+                "<acronym class="acronym">maildir</acronym>" format. This is the format we will later on setup
+                <span class="application">Dovecot</span> to use in <a class="xref" href="chap.dovecot.html" title="Setting up Dovecot">the section called “Setting up Dovecot”</a>
+            .</p><p>In order to access the mail storage the most flexible way is through an
+                <acronym class="acronym">IMAP</acronym> server (the old and mainly obsolete way being through a POP3
+            server). It is important to understand that an <acronym class="acronym">IMAP</acronym> server is only
+            responsible to manipulate messages (files) on disk storage. The <acronym class="acronym">IMAP</acronym>
+            server is like mother goose watching over the mail storage. It is not involved in
+            neither sending nor receiving messages in any shape or form. The mail user agent (MUA)
+            connects to the IMAP server and reads the messages for its user. Messages are always
+            kept at the server even after they have been read. This will allow us to later on
+            synchronize the message storage with any other devices and messages that are marked as
+            read on one device will show up read on all other devices as soon as they synchronize
+            their mails. For efficiency reason most mail clients choses to cache messages locally in
+            order not to have to transfer them from the server each time the user decides to open
+            the message.</p><p>For now we can also assume that it is the responsibility of some other program to
+            actually store the incoming messages in the mail storage. In mail lingo such a program
+            that stores messages locally on disk is called <acronym class="acronym">LDA</acronym> (<span class="italic">Local Delivery Agent</span>). </p><p>The main responsibility for an <acronym class="acronym">IMAP</acronym> server is to allow
+            authenticated users to access their messages and update the status of messages such as
+            read or moved ot a different mail folder.</p><p>So how can Dovecot keep track of mails if any other program can write new mails into
+            the storage? </p><p>On Linux Dovecot uses notifications of file changes to get information on when new
+            mails arrive (using the <acronym class="acronym">inotify</acronym> mechanism). By subscribing to file
+            changes in the mail directories it is possible for dovecot to maintain information and
+            indexes (to quickly find mail). There is also a structure in the
+                <acronym class="acronym">maildir</acronym> directories on where to store new mails so
+                <span class="application">Dovecot</span> knows exactly where to look for new messages. </p><p>One reason for choosing <span class="application">Dovecot</span> as our IMAP server (there
+            are others as well) is the fact that it is fast, extremely robust and it is almost
+            impossible to get into a corrupt <acronym class="acronym">IMAP</acronym> state. Even removing all the
+            index files will have no effect. <span class="application">Dovecot</span> will just notice
+            that the files are gone and recreate them by re-reading mails in the storage as
+            necessary.</p><p>Dovecot is also the only widely available <acronym class="acronym">IMAP</acronym> server (including
+            some well-known commercially available servers) that fully passes the complete
+                <acronym class="acronym">IMAP</acronym> stress test (see<a class="link" href="http://www.imapwiki.org/ImapTest/ServerStatus" target="_top">
+                http://www.imapwiki.org/ImapTest/ServerStatus</a>)</p><p>
+            </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/usr/local/share/oxygen14.0/frameworks/docbook/xsl/images/note.png"/></td><th align="left">Note</th></tr><tr><td align="left" valign="top"><p>Dovecot is to large extent the creation of a single individual, a finish
+                    software engineer with the name of <span class="italic">Timo
+                        Sirainen</span>. </p><p>More information on <span class="application">Dovecot</span> can be found at<a class="link" href=" http://dovecot.org/" target="_top"> http://dovecot.org/</a>
+                </p></td></tr></table></div><p>
+        </p></div><div class="sect2" id="d5e434"><div class="titlepage"><div><div><h3 class="title">Fetchmail</h3></div></div></div><p>Since external <acronym class="acronym">MTA</acronym> servers can not connect to us directly in order
+            to periodically push new messages to us we must have some method to gather messages from
+            external mail accounts and store them in our mail repository. This is the only way we
+            can receive messages assuming we are configuring a home server which lacks the ability
+            to act as an official domain mail server. Enter here the aptly named program
+                <acronym class="acronym">fetchmail</acronym>. </p><p>This program is used to periodically authenticate and fetch new messages from external
+            mail accounts and deliver them locally. We can, for example, setup fetchmail to gather
+            messages from a GMail or Hotmail account so that they can later be accessed by the
+                <acronym class="acronym">IMAP</acronym> server.</p><p>The way <acronym class="acronym">fetchmail</acronym> works is that it collects messages from external
+            accounts and then delivers them to our <acronym class="acronym">MTA</acronym> (postfix) on port
+                <code class="literal">25</code>. In effect making it look to postfix like it has received a
+            mail from another <acronym class="acronym">MTA</acronym>, see <a class="xref" href="ar01s02.html#fig.fetchmail-overview" title="Figure 4. fetchmail process overview">Figure 4, “fetchmail process overview”</a>.</p><p>Since <acronym class="acronym">fetchmail</acronym> does not handle authentication at delivery on port
+                <code class="literal">25</code>
+            <acronym class="acronym">postfix</acronym> must be setup to accept delivery from other daemons that run
+            on the same server without requiring authentication.</p><div class="figure" id="fig.fetchmail-overview"><p class="title"><strong>Figure 4. fetchmail process overview</strong></p><div class="figure-contents"><div class="mediaobject"><img src="figures/fetchmail-view.png" width="486" alt="fetchmail process overview"/></div></div></div><br class="figure-break"/><p>Refer to <a class="xref" href="ar01s02.html#fig.mail-overview" title="Figure 2. Mail server overview">Figure 2, “Mail server overview”</a> for an illustration where
+                <acronym class="acronym">fetchmail</acronym> fits into the overall setup.</p></div><div class="sect2" id="d5e461"><div class="titlepage"><div><div><h3 class="title">Procmail</h3></div></div></div><p>The final bit of the puzzle, which strictly speaking is not necessary, will make
+            things like spam filtering and rule based processing of messages possible.
+                <acronym class="acronym">Procmail</acronym> fills the role of a <acronym class="acronym">LDA</acronym> (Local
+            Delivery Agent), the last stage that receives a mail (from <acronym class="acronym">postfix</acronym>)
+            as input before storing it on the file system mail storage. </p><p><acronym class="acronym">Procmail</acronym> configuration is based on rules which uses pattern
+            matching of messages together with a corresponding action to be taken when the pattern
+            matches. </p><p>Depending on the user specified rules different actions can be taken depending on the
+            content of the message. A common rule is to store incoming messages in a specific folder
+            based on some criteria. This could for example be used to store identified spams in a
+            specific folder, newsletters in another and the rest of the incoming messages in the
+            inbox. The action in the rules are not just limited to sorting mails in different
+            folders, external programs can also be called when a pattern matches.</p><p>The rules that control <acronym class="acronym">procmail</acronym> on how to handle incoming mails are
+            very flexible and it is easy to do things like passing certain mails to some programs
+            for further processing or make automatic replies based on the content in the mail. </p><p>Unfortunately the syntax for specifying rules in <acronym class="acronym">procmail</acronym> is an
+            acquired taste at best and takes some getting used to. To ease the writing pain we have
+            collected a few common and useful <acronym class="acronym">procmail</acronym> recipes in <a class="xref" href="appendix.procmail.html" title="B. Procmail recipes">Appendix B, <em>Procmail recipes</em></a>.</p><div class="figure" id="fig.postfix-procmail"><p class="title"><strong>Figure 5. Interaction between Postfix and procmail</strong></p><div class="figure-contents"><div class="mediaobject"><img src="figures/postfix-procmail.png" width="432" alt="Interaction between Postfix and procmail"/></div></div></div><br class="figure-break"/></div><div class="sect2" id="d5e483"><div class="titlepage"><div><div><h3 class="title">Roundcube (and Apache)</h3></div></div></div><p>The above four actors (<acronym class="acronym">postfix</acronym>, <acronym class="acronym">dovecot</acronym>,
+                <acronym class="acronym">fetchmail</acronym> and <acronym class="acronym">procmail</acronym>) are one possible set
+            of applications that can be used to setup a basic mail server. But this can probably be
+            considered one of the standards that both individuals larger organizations use. </p><p>In our setup we will also install a Web based mail client that will allow reading and
+            manipulate of messages using any available Web browser. </p><p>The mail client will be installed in the same server and talk directly to our
+                <acronym class="acronym">IMAP</acronym> server, i.e. <span class="application">Dovecot</span>. In our
+            setup we will configure <span class="application">Apache</span> (which is our web-server) to
+                allow<code class="literal"> https://</code> protocol access to
+                <span class="application">Roundcube</span>. </p><p>We have chosen <span class="application">Roundcube</span> since in our opinion it is one of
+            the best free Ajax-based web-mail clients available and is easy to install. A screen
+            shot from Roundcube is shown in <a class="xref" href="ar01s02.html#fig.roundcube" title="Figure 6. Roundcube Webmail client">Figure 6, “Roundcube Webmail client”</a></p><p>
+            </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="/usr/local/share/oxygen14.0/frameworks/docbook/xsl/images/note.png"/></td><th align="left">Note</th></tr><tr><td align="left" valign="top"><p>If you prefer a native client skip this step and use a native mail client (for
+                    example KMail in the KDE desktop) as a mail client and configure it to access
+                    the local IMAP mail storage. </p><p>However we would still recommend you to install Roundcube since it is fairly
+                    straight forward and gives universal access to the mail storage from anywhere i
+                    the world as long as a browser with intenet connections can be found.</p></td></tr></table></div><p>
+        </p><div class="figure" id="fig.roundcube"><p class="title"><strong>Figure 6. Roundcube Webmail client</strong></p><div class="figure-contents"><div class="mediaobject"><img src="figures/roundcube-orig.jpg" width="513" alt="Roundcube Webmail client"/></div></div></div><br class="figure-break"/></div><div class="sect2" id="d5e511"><div class="titlepage"><div><div><h3 class="title">openssl</h3></div></div></div><p>The openssl library is the de-facto standard encryption library on Linux based
+            systems. It is used to both manipulate and create encryption keys as well as being
+            library for other programs needing to encrypt data. openssl can refer both to the
+            specific command <span class="command"><strong>openssl</strong></span> as well as the overall library. The context
+            will determine the usage.</p></div><div class="sect2" id="d5e515"><div class="titlepage"><div><div><h3 class="title">spamassassin</h3></div></div></div><p>To help identify spam mails (i.e. unwanted junk mail) we will setup and use a
+                <span class="application">Perl</span> library called
+                <span class="application">spamassassin</span>. When a message is about to be delivered to
+            the local user it will first be run through spamassassin. This program will then examine
+            the message based on a number of both pre-defined and heuristic tests and give the mail
+            a score to illustrate the likelihood that the message is junk.</p><p>After that it is up to the user that received the mail to determine use the calculated
+            score for further actions. The most common example is to have all messages with a score
+            above <code class="literal">X</code> to be stored in the junk mail folder. </p></div></div><div class="navfooter"><hr/><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="oxygen-main.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s03.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">The Complete OpenSuSE Mail Server </td><td width="20%" align="center"><a accesskey="h" href="oxygen-main.html">Home</a></td><td width="40%" align="right" valign="top"> The setup process</td></tr></table></div><div class="footer">WebHelp output generated by<a href="http://www.oxygenxml.com" target="_blank"><span class="oXygenLogo"><img src="oxygen-webhelp/resources/img/LogoOxygen100x22.png" alt="Oxygen"/></span><span class="xmlauthor">XML Author</span></a>.
+        </div>    <script type="text/javascript">
+        <!--
+            function expand(){
+                if (parent.tocwin){
+                    parent.tocwin.expandToTopic(window.location.href, this.getAttribute('href'));
+                }
+            }
+            var aArray = document.getElementsByTagName('a');
+            var i;
+            for (i = 0; i< aArray.length; i++){
+              aArray[i].onclick = expand;
+            }
+        -->
+    </script> 
+    <div id="productInfo" style="display:none;">
+        <span id="oxy_productID"></span>
+        <span id="oxy_productVersion"></span>
+    </div>
+    <div id="loginData" style="display: none">
+		<span class="bt_close" title="Close"></span>
+		<form action="" target="passwordIframe" method="POST" name="form_login" onsubmit="return loggInUser();" id="loginFormData" autocomplete="on" >
+			<input type="hidden" id="reloadComments" value="yes"/>
+			<table class="login">
+				<thead>
+					<tr>
+						<td colspan="2">
+							<span id="l_login2">
+							<script type="text/javascript">$('#l_login2').html(getLocalization('label.login'));</script>			
+							</span>
+						</td>
+					</tr>
+					<tr>
+						<td colspan="2">
+							<div id="loginResponse"></div>
+						</td>
+					</tr>
+				</thead>
+				
+				<tr>
+					<td>
+						<span id="l_userName">
+							<script type="text/javascript">$('#l_userName').html(getLocalization('label.userName'));</script>			
+						</span>						
+					</td>
+					<td><input name="usernameW" type="text" id="myUserName"  autocomplete="on" required="required" autofocus="autofocus" /></td>
+				</tr>
+				<tr>
+					<td>
+						<span id="l_pswd">
+							<script type="text/javascript">$('#l_pswd').html(getLocalization('label.pswd'));</script>			
+						</span>
+					</td>
+					<td><input name="passwordW" type="password" id="myPassword" autocomplete="on" required="required" /></td>
+				</tr>
+				<tr>
+					<td colspan="2" align="left">									
+					<span id="ll_remember">
+							<script type="text/javascript">
+								$('#ll_remember').html(getLocalization('label.rememberme'));
+							</script>			
+						</span>
+						&nbsp;&nbsp;&nbsp;
+							<input name="myLoginRemember" type="checkbox" class="ck" id="myRemember" value="no"/>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2" align="center">
+					<input id="l_bt_submit_log" type="submit" value="Submit" name="loginFormButton"/>
+					
+					<script type="text/javascript">$('#l_bt_submit_log').attr('value',getLocalization('label.login'));</script>
+					<span class="btnHGlue"></span>
+					<input class="bt_cancel" id="l_cancelLog" type="button" value="Cancel" name="loginFormButton"/>												
+					<script type="text/javascript">$('#l_cancelLog').attr('value',getLocalization('label.cancel'));</script>
+			</td>
+				</tr>
+			</table>
+			<div class="loginAlternative">
+				<span id="link_lostPwd" onclick="showLostPwd()">
+					<script type="text/javascript">$('#link_lostPwd').html(getLocalization('label.lostPswd'));</script>
+				</span> 
+				<span id="link_signUp" onclick="showSignUp()">
+					<script type="text/javascript">$('#link_signUp').html(getLocalization('label.signUp'));</script>
+				</span>
+			</div>
+			
+		</form>
+		<iframe id="passwordIframe" name="passwordIframe" style='display:none'></iframe>
+	</div>
+	<div id="commentsContainer"></div>
+                 </body></html>

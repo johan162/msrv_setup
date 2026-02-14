@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>A.3 Example 3</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49621216"/>A.3 Example 3</h1></div></div></div>
+        
+        <p>Allow clients on the local machine (host) to connect and send relay mails without
+            logging in. Force external clients to use <acronym class="acronym">SSL/TLS</acronym> before allowing them to login.</p>
+        <pre class="programlisting">mynetworks_style = host
+
+# sasl
+smtpd_sasl_auth_enable = yes
+
+# tls
+#
+smtpd_tls_security_level = may
+smtpd_tls_loglevel = 1
+smtpd_tls_cert_file = &lt;/path/to/crt.crt&gt;
+smtpd_tls_key_file = &lt;/path/to/key.key&gt;
+
+# Only expose the AUTH command after an encrypted <acronym class="acronym">SSL/TLS</acronym> 
+# session is established
+smtpd_tls_auth_only = yes
+smtpd_tls_session_cache_database = 
+  btree:/usr/local/etc/postfix/smtpd_tls_scache
+
+smtpd_recipient_restrictions = 
+  permit_mynetworks
+  permit_sasl_authenticated
+  reject_unauth_destination           
+        </pre>
+    </div></body></html>

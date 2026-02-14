@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?hard-pagebreak?>
+<sect1 xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
+    version="5.0"  revision="$Id: section07.xml 50 2012-01-25 01:54:48Z ljp $">
+    <title>Setting up fetchmail</title>
+    <para><application>Fetchmail</application>:s role is to fetch mail from remote hosts to our
+        server and deliver the fetched mail locally. In order to fetch mail we must first setup a
+        configuration file for fetchmail with the remote servers and there credentials where we want
+        to fetch mail, this configuration file is <filename>/etc/fetchmailrc</filename>.</para>
+    <para>After fetchmail has logged in it will deliver the mails locally to our <acronym>SMTP</acronym> server just as
+        if the mail had come from some remote <acronym>SMTP</acronym> server connecting to us. </para>
+    <para>There is one thing to keep in mind here though and that is that fetchmail only handles
+        password when fetching mail. It cannot handle passwords in the local delivery. This means
+        that our postfix setup must accept incoming mails that should be delivered locally without
+        password (which is the normal). Since we have specified
+            <literal>smtpd_recipient_restrictions</literal> with the option
+            <literal>permit_mynetworks</literal> This will allow fetchmail to store mail locally
+        without providing a password. </para>
+    <para>To be really secure we should restrict this further by only allowing access from within
+        the server itself. This can be done by making sure that <code>mynetworks_style=host</code>
+        is set and make sure that <code>mynetworks</code> is empty since that configuration variable
+        has precedence (if that is set the <code>mynetworks_style</code> will be ignored).</para>
+    <sect2>
+        <title>Configuring fetchmail</title>
+        <para>In the documentation for <command>fetchmail</command> there are several examples on
+            how to setup a basic configuration. So in this section we will show some examples of
+            more complex setup which isn't available in the fetchmail documentation. </para>
+        <para>The advantage (if any) with fetchmail configuration syntax is that it is quite
+            "chatty" and can be read almost as an English sentence.</para>
+        <para>Let's start with a very basic example. Assuming that the remote server is called
+                “<uri>remotemail.com</uri>” and the server uses POP3 (not <acronym>IMAP</acronym>).
+            Furthermore we assume the username is “<literal>joe</literal>” (both remote and local)
+            and the password is “<literal>secret</literal>. </para>
+        <para>The following configuration line will handle this case:</para>
+        <para>
+            <programlisting>poll remotemail.com proto pop3 user "joe" there \ 
+with password "secret"  is "joe" here;</programlisting>
+        </para>
+        <para>Let's now do a slightly more complex setup. In this setup we are connecting to an
+                <acronym>IMAP</acronym> server over <acronym>SSL/TSL</acronym> (meaning that we need
+            to connect on port 993) and we want to collect mail from both the
+                “<literal>Inbox</literal>” folder as well as the “<literal>Junk</literal>” mail
+            folder back to our server. </para>
+        <para>Furthermore we want to permanently delete mails that are rejected as spams by our own
+            postfix server when <application>fetchmail</application> tries to deliver it.</para>
+        <para>
+            <programlisting>defaults
+        user "joe@remotemail.com" is "joe"
+        set no softbounce
+        antispam 501
+        bad-header accept
+
+poll imap.remotemail.com with proto <acronym>IMAP</acronym> port 993:
+        <acronym>SSL</acronym>        
+        folder 'inbox','Junk'
+        password "secret";</programlisting>
+        </para>
+        <para>There are a couple of unusual thing in this setup.</para>
+        <itemizedlist>
+            <listitem>
+                <para>To make it more readable we first set up some default values that apply to all
+                    defined servers. We use this to first set the user we are collecting mail from.
+                    The second option requires some more explanations. If we fetch a mail from the
+                    remote server and when we try to deliver it to our own postfix server it is
+                    refused since it is considered a wrongly formatted mail. In this case fetchmail
+                    will normally leave the mail on the remote server. With this option set
+                    fetchmail will remove the mail from the remote server even when it was rejected
+                    by our own server, effectively deleting the mail without anyone ever receiving
+                    it. </para>
+                <para>This might sound like a bad thing to do. However mail that are so wrongly
+                    formatted that postfix refuses to accept it as a proper mail are to 99.999%
+                    spams.  </para>
+            </listitem>
+            <listitem>
+                <para>The <literal>antispam 501</literal> line tells fetchmail to interpret an 501
+                    error (Bad address syntax) from the local postfix server not as an error but as
+                    a signal that the delivered mail is interpreted as a spam by postfix. It will
+                    then discard the message and since “<code>set no softbounce</code>” is in
+                    effect. The mail will then also be deleted from the remote server. </para>
+                <para>A common cause of this is that postfix with default settings refuses addresses
+                    which begin by an “-“ (hyphen). This might be unusual but it is actually allowed
+                    (see RFC 5321, RFC 5322) so in this case postfix is a bit picky.</para>
+            </listitem>
+            <listitem>
+                <para>The “<literal>bad-header accept</literal>” command allows
+                        <command>fetchmail</command> to collect mail even if some of the headers are
+                    incorrect.</para>
+            </listitem>
+            <listitem>
+                <para>We then specify that we connect to the <acronym>IMAP</acronym> server on port
+                    993 and enable <acronym>SSL</acronym>.</para>
+            </listitem>
+            <listitem>
+                <para>To get mail from several folders we use the “<code>folder</code>” command and
+                    then just list the folders we want to collect the mail from</para>
+            </listitem>
+        </itemizedlist>
+        <para>Before starting fetchmail check that you are happy with the default configuration in
+                <filename>/etc/sysconfig/fetchmail</filename> such as poll interval. (Just keep in
+            mind that some <acronym>ISP</acronym> gets a bit unhappy if you try to poll there server
+            every minute or so.) </para>
+        <tip>
+            <para>There is also a GUI tool <command>fetchmailconf</command> that can be used to ease
+                the creation of fetchmail configuration files. You can install this with </para>
+            <para>
+                <screen>$> sudo zipper install fetchmailconf</screen>
+            </para>
+        </tip>        
+    </sect2>
+    <sect2>
+        <title>Starting and enabling fetchmail at boot time</title>
+        <para>To manually start <command>fetchmail</command> give the command </para>
+        <screen>$> chkconfig –add fetchmail</screen>
+        <para>You should also add fetchmail as a service that is started at the same time the server
+            boots. You can do this via Yast or by giving the command</para>
+        <screen>$> chkconfig –add fetchmail</screen>
+        <para>This command will start fetchmail in the default run levels (most likely 3- multiuser
+            with network and 5 - full X-window client)</para>
+   
+    </sect2>
+    
+</sect1>

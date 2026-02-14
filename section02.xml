@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?hard-pagebreak?>
+<sect1 xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
+    version="5.0" revision="$Id: section02.xml 56 2012-07-23 19:38:49Z ljp $">    
+    <title>Overview of the components</title>
+    <para>Unfortunately there isn't one simple program that will do all what we need. Instead we
+        will need a number of components to achieve our goal. A server setup with IMAP/SMTP has some
+        reputation of being “black-magic” to setup. However, this is mostly based on the fact that
+        there are many different parts involved and misunderstanding the role of (or interactions
+        between) the different actors will definitely make the process seem like black magic. So
+        lets start by discussing the parts involved and give a high level logical overview on how
+        the parts interact. For a pictorial overview please refer to <xref
+            xlink:href="#fig.mail-overview"/></para>
+    <figure xml:id="fig.mail-overview">
+        <title>Mail server overview</title>
+        <mediaobject>            
+            <imageobject role="fo">
+                <imagedata fileref="figures/mail-overview.png" scalefit="1" width="50%" contentwidth="50%"/>
+            </imageobject>
+            <imageobject role="html">
+                <imagedata fileref="figures/mail-overview.png" contentwidth="600px"/>
+            </imageobject>            
+        </mediaobject>
+    </figure>
+    <sect2>
+        <title>Postfix</title>
+        <para>This is the <acronym>SMTP/SMTPD</acronym> server/daemon that handles the mail
+            protocols we will be using. The <application>Postfix</application> server is abstractly
+            known as an MTA (<emphasis role="italic">Mail Transfer Agent</emphasis>) in mail lingo.
+            These are the backbones of message transfer over the internet. The role of the MTAs are
+            to receive and forward messages to other MTAs depending on the end address. This
+            forwarding continues until the message reaches the server that is responsible for the
+            domain the message is addressed to. Once the message is at its final destination it gets
+            delivered to the appropriate user in that domain.</para>
+        <para>The headers in a typical message will show which MTAs have been passed in the process
+            of delivering the mail from the sender to the recipient. </para>
+        <para>Initially a user creates a message with some mail client, a mail client is abstractly
+            known as <acronym>MUA</acronym>, <emphasis role="italic">Mail User Agent</emphasis>)
+            examples are (for example) <application>KMail</application>,
+                <application>Thunderbird</application> or <application>Roundcube</application>. The
+                <acronym>MUA</acronym> initially connects to a specified <acronym>MTA</acronym> that
+            receives the message. The <acronym>MTA</acronym> examines the headers in the mail and
+            determines if it should forward the message to some other <acronym>MTA</acronym> or if
+            the message is to be locally delivered.</para>
+        <para>The reason for using this abstract language instead of referring to the specific
+            programs we are using is to be able to discuss mails without referring to specific
+            protocols or applications. </para>
+        <para>All of the above is relevant only to officially registered mail servers for a specific
+            domain. These mail serves are recognized in the <acronym>DNS</acronym> system with a so
+            called <acronym>MX</acronym> record (Mail eXchange). A home based server is normally not
+            an officially recognized mail server fresponsible for a particular domain. Instead the
+            home <acronym>MTA</acronym> has to be configured to relay messages it receives from a
+            mail client on to an official mail server. This is normally the mail server at the
+                <acronym>ISP</acronym>.</para>
+        <para>
+            <note>
+                <para>For a proper email server connected to the internet with a MX (Mail eXchange)
+                    record in its DNS entry there are many more details to take into account. For
+                    example DKIM, FBL and SPF just to name a few techniques and methods a sysadmin
+                    has to be familiar with. Luckily for a home server we can ignore this.</para>
+            </note>
+        </para>
+        <para>Postfix has two separate and distinct roles, one as a sending server, an
+                <acronym>SMTP</acronym> server, and one as a receiving daemon, the
+                <acronym>SMTPD</acronym> server. The <acronym>SMTP</acronym> server is responsible
+            for sending mail to other servers while the receiving server is a daemon that waits for
+            connections from other servers (or clients) to receive messages. Any messages that
+            should be delivered locally will be stored the users mailbox and any message with a
+            recipient outside the domain the server is responsible for will be forwarded to the next
+            mail server depending on the end address. </para>
+        <para>By default the assigned port that the receiving <acronym>MTA</acronym> server listens
+            on for non-encrypted messages are on port <literal>25</literal>, see figure <xref
+                xlink:href="#fig.smtp-smtpd"/>. This is the port that is used both when other MTAs
+            to talk to our server to forward messages as well as the port that mail clients connects
+            on to initially send messages created by the client. (This is how most setups work in
+            practice for historical reasons. However, this is not really in compliance with the
+            original RFCs. In the original specifications port 25 should only be used for
+                <acronym>MTA</acronym> to <acronym>MTA</acronym> communication and port
+                <literal>587</literal> should be used when a mail clients want to send a new message
+            to a <acronym>MTA</acronym>.)</para>
+        <para>An important part of this setup is that the server will relay all incoming mails to
+            the <acronym>ISP</acronym>s mail server which will then send it to the rest of the
+            world. Most <acronym>ISP</acronym> will not allow neither outgoing nor incoming traffic
+            on port <literal>25</literal> to any other servers besides their own. This makes it
+            impossible to either directly send messages on port <literal>25</literal> to our server
+            from the ouside or to use any other mail server besides the <acronym>ISP</acronym> to
+            forward our messages to. The ISPs block port <literal>25</literal> in an futile attempt
+            to block spams that are sent by Trojan mail servers running on unsuspecting servers. The
+            reason this is futile is that it is as easy to use another port on the server for the
+            spammers. The <acronym>ISP</acronym> who is blocking of port <literal>25</literal> is
+            today mainly just an irritation for advanced users. It does not stop spam in any shape
+            or form. </para>
+        <para>What we need to do in order to send mail via our home server is to use another port,
+            connect to that other port and have postfix relay our message to be sent to our ISPs
+            official mail server. This will of course assume that we have told our
+                <acronym>SMTPD</acronym> daemon to listen on that port. </para>
+        <para>The reasons we do not have our mail clients connect directly to our ISPs mail server
+            but instead going through our home server are twofold: </para>
+        <itemizedlist>
+            <listitem>
+                <para>most <acronym>ISP</acronym> does not allow connections to their mail server
+                    unless the connections originate from somewhere within their own network. That
+                    means it would be impossible to directly connect to the <acronym>ISP</acronym>
+                    mail server from some device outside the subnet controlled by the
+                        <acronym>ISP</acronym>, say a smartphone. </para>                
+            </listitem>
+            <listitem>
+                <para>the second reason is that we want to be able to send local mails originating
+                    in our server (for example system mail) to a valid address (this will also
+                    require us to alias a local user to a real email address since most mail servers
+                    refuses to pass on messages with a bogus sender address, say
+                        "<email>root@localhost</email>")</para>                
+            </listitem>
+        </itemizedlist>
+            <figure xml:id="fig.smtp-smtpd">
+                <title>The dual role of postfix</title>
+                <mediaobject>
+                    <imageobject role="fo">
+                        <imagedata fileref="figures/smtp-smtpd.png" scalefit="1" width="50%" contentwidth="50%"/>
+                    </imageobject>
+                    <imageobject role="html">
+                        <imagedata fileref="figures/smtp-smtpd.png" scale="80"/>
+                    </imageobject>
+                    
+                </mediaobject>
+            </figure>
+        
+    </sect2>
+    <sect2>
+        <title>Dovecot</title>
+        <para>All messages needs to be stored in a structured way on disk for each user. The two
+            formats mostly used in the Unix/Linux world are. </para>
+        <itemizedlist>
+            <listitem>
+                <para>"<acronym>maildir</acronym>" format. This format stores all messages as
+                    individual files in a directory structure corresponding to the mail folders
+                    defined.</para>
+            </listitem>
+            <listitem>
+                <para>"<acronym>mbox</acronym>" format. This format stores all messages lumped
+                    together in one file. Historically this is the "original" message storing
+                    format. For all practical purposes this should not be usedin new setups.</para>
+            </listitem>
+        </itemizedlist>
+        <para>For all modern installation it is strongly recommended to use the
+                "<acronym>maildir</acronym>" format. This is the format we will setup
+                <application>Dovecot</application> to use in <xref xlink:href="#chap.dovecot"/>
+            .</para>
+        <para>In order to access the mail storage the most flexible way is through an
+                <acronym>IMAP</acronym> server (the old and mainly obsolete way being through a POP3
+            server). It is important to understand that an <acronym>IMAP</acronym> server is only
+            responsible to manipulate messages (files) on disk storage. The <acronym>IMAP</acronym>
+            server is like mother goose watching over the mail storage. It is not involved in
+            neither sending nor receiving messages in any shape or form. The mail user agent (MUA)
+            connects to the IMAP server and reads the messages for its user. Messages are always
+            kept at the server even after they have been read. This will allow us to later
+            synchronize the message storage with any other devices and messages that are marked as
+            read on one device will show up read on all other devices as soon as they synchronize
+            their mails. For efficiency reason most mail clients choses to cache messages locally in
+            order not to have to transfer them from the server each time the user decides to open
+            the message. In our case we will later on show how to setup a web based mailer and in
+            that case there will be no local caching and messages are only stored on the
+            server.</para>
+        <para>For now we can also assume that it is the responsibility of some other program to
+            actually store the incoming messages in the mail storage (on disk). In mail lingo such a
+            program that stores messages locally on disk is called <acronym>LDA</acronym> (<emphasis
+                role="italic">Local Delivery Agent</emphasis>). </para>
+        <para>The main responsibility for an <acronym>IMAP</acronym> server is to allow
+            authenticated users to access their messages and update the status of messages such as
+            read or moved to a different mail folder.</para>
+        <para>So how can Dovecot keep track of mails if any other program can write new mails into
+            the storage? </para>
+        <para>On Linux Dovecot uses notifications of file changes to get information on when new
+            mails arrive (using the <acronym>inotify</acronym> mechanism). By subscribing to file
+            changes in the mail directories it is possible for dovecot to maintain information and
+            indexes (to quickly find mail). There is also a structure in the
+                <acronym>maildir</acronym> directories on where to store new mails so
+                <application>Dovecot</application> knows exactly where to look for new messages. </para>
+        <para>One reason for choosing <application>Dovecot</application> as our IMAP server (there
+            are others as well) is the fact that it is fast, extremely robust and it is almost
+            impossible to get into a corrupt <acronym>IMAP</acronym> state. Even removing all the
+            index files will have no effect. <application>Dovecot</application> will just notice
+            that the files are gone and recreate them by re-reading mails in the storage as
+            necessary.</para>
+        <para>Dovecot is also the only widely available <acronym>IMAP</acronym> server (including
+            some well-known commercially available servers) that fully passes the complete
+                <acronym>IMAP</acronym> stress test (see<link
+                xlink:href="http://www.imapwiki.org/ImapTest/ServerStatus">
+                http://www.imapwiki.org/ImapTest/ServerStatus</link>)</para>
+        <para>
+            <note>
+                <para>Dovecot is to large extent the creation of a single individual, a finish
+                    software engineer with the name of <emphasis role="italic">Timo
+                        Sirainen</emphasis>. </para>
+                <para>More information on <application>Dovecot</application> can be found at<link
+                        xlink:href=" http://dovecot.org/"> http://dovecot.org/</link>
+                </para>
+            </note>
+        </para>
+    </sect2>
+    <sect2>
+        <title>Fetchmail</title>
+        <para>Since external <acronym>MTA</acronym> servers can not connect to us directly in order
+            to periodically push new messages to us we must have some method to gather messages from
+            external mail accounts and store them in our mail repository. This is the only way we
+            can receive messages assuming we are configuring a home server which lacks the ability
+            to act as an official domain mail server. Enter here the aptly named program
+                <acronym>fetchmail</acronym>. </para>
+        <para>This program is used to periodically authenticate and fetch new messages from external
+            mail accounts and deliver them locally. We can, for example, setup fetchmail to gather
+            messages from a GMail or Hotmail account so that they can later be accessed by the
+                <acronym>IMAP</acronym> server.</para>
+        <para>The way <acronym>fetchmail</acronym> works is that it collects messages from external
+            accounts and then delivers them to our <acronym>MTA</acronym> (postfix) on port
+                <literal>25</literal>. In effect making it look to postfix like it has received a
+            mail from another <acronym>MTA</acronym>, see <xref xlink:href="#fig.fetchmail-overview"
+            />.</para>
+        <para>
+            <caution>
+                <para>Since <acronym>fetchmail</acronym> does not handle authentication at delivery
+                    on port <literal>25</literal>
+                    <acronym>postfix</acronym> must be setup to accept delivery from other daemons
+                    that run on the same server without requiring authentication. We will later show
+                    how to do that in the postfix setup section.</para>
+            </caution>
+        </para>
+        <figure xml:id="fig.fetchmail-overview">
+            <title>fetchmail process overview</title>
+            <mediaobject>
+                <imageobject role="fo">
+                    <imagedata fileref="figures/fetchmail-view.png" scalefit="1" width="50%" contentwidth="50%"/>
+                </imageobject>
+                <imageobject role="html">
+                    <imagedata fileref="figures/fetchmail-view.png" scale="90" />
+                </imageobject>
+                
+            </mediaobject>
+        </figure>
+        <para>Refer to <xref xlink:href="#fig.mail-overview"/> for an illustration where
+                <acronym>fetchmail</acronym> fits into the overall setup.</para>
+    </sect2>
+    <sect2>
+        <title>Procmail</title>
+        <para>The final bit of the puzzle, which strictly speaking is not necessary, will make
+            things like spam filtering and rule based processing of messages possible.
+                <acronym>Procmail</acronym> fills the role of a <acronym>LDA</acronym> (Local
+            Delivery Agent), the last stage that receives a mail (from <acronym>postfix</acronym>)
+            as input before storing it on the file system mail storage. </para>
+        <para><acronym>Procmail</acronym> configuration is based on rules which uses pattern
+            matching of messages together with a corresponding action to be taken when the pattern
+            matches. </para>
+        <para>Depending on the user specified rules different actions can be taken depending on the
+            content of the message. A common rule is to store incoming messages in a specific folder
+            based on some criteria. This could for example be used to store identified spams in a
+            specific folder, newsletters in another and the rest of the incoming messages in the
+            inbox. The action in the rules are not just limited to sorting mails in different
+            folders, external programs can also be called when a pattern matches.</para>
+        <para>The rules that control <acronym>procmail</acronym> on how to handle incoming mails are
+            very flexible and it is easy to do things like passing certain mails to some programs
+            for further processing or make automatic replies based on the content in the mail. </para>
+        <para>Unfortunately the syntax for specifying rules in <acronym>procmail</acronym> is an
+            acquired taste at best and takes some getting used to. To ease the writing pain we have
+            collected a few common and useful <acronym>procmail</acronym> recipes in <xref
+                xlink:href="#appendix.procmail"/>. On the net there are also dedicated pages with
+            recipies for several commonly used procmail rules.</para>
+        
+            <figure xml:id="fig.postfix-procmail">
+                <title>Interaction between Postfix and procmail</title>
+                <mediaobject>
+                    <imageobject role="fo">
+                        <imagedata fileref="figures/postfix-procmail.png" scalefit="1" width="50%" contentwidth="50%"/>
+                    </imageobject>
+                    <imageobject role="html">
+                        <imagedata fileref="figures/postfix-procmail.png" scale="80"/>
+                    </imageobject>                    
+                </mediaobject>
+            </figure>
+        
+    </sect2>
+    <sect2>
+        <title>Roundcube (and Apache)</title>
+        <para>The above four actors (<acronym>postfix</acronym>, <acronym>dovecot</acronym>,
+                <acronym>fetchmail</acronym> and <acronym>procmail</acronym>) are only one possible
+            set of applications that can be used to create a basic mail server. Hower this
+            particular combination can probably be considered one of the standards that both
+            individuals larger organizations use. </para>
+        <para>In our setup we will also install a Web based mail client that will allow reading and
+            manipulate of messages using any available Web browser. </para>
+        <para>The mail client will be installed in the same server and talk directly to our
+                <acronym>IMAP</acronym> server, i.e. <application>Dovecot</application>. In our
+            setup we will configure <application>Apache</application> (which is our web-server) to
+                allow<literal> https://</literal> protocol access to
+                <application>Roundcube</application>. </para>
+        <para>We have chosen <application>Roundcube</application> since in our opinion it is one of
+            the best free Ajax-based web-mail clients available and is easy to install. A screen
+            shot from Roundcube is shown in <xref xlink:href="#fig.roundcube"/></para>
+        <para>
+            <note>
+                <para>If only native clients should be used (for example Thunderbird or KMail) skip
+                    this step and use a native mail client (for example KMail in the KDE desktop) as
+                    a mail client and configure it to access the local IMAP mail storage. </para>
+                <para>However we would still recommend to install Roundcube since it is straight
+                    forward and gives universal access to the mail storage from anywhere i the world
+                    as long as a browser with internet connections can be found.</para>
+            </note>
+        </para>
+        <figure xml:id="fig.roundcube">
+            <title>Roundcube Webmail client</title>
+            <mediaobject>
+                <imageobject role="fo">
+                    <imagedata fileref="figures/roundcube-orig.jpg" scalefit="1"  width="70%" contentwidth="70%"/>
+                </imageobject>
+                <imageobject role="html">
+                    <imagedata fileref="figures/roundcube-orig.jpg" scale="95"/>
+                </imageobject>                
+            </mediaobject>
+        </figure>
+    </sect2>
+    <sect2>
+        <title>openssl</title>
+        <para>This is a supporting library used by several other components. The openssl library is
+            the de-facto standard encryption library on Linux based systems. It is used to both
+            manipulate and create encryption keys as well as being library for other programs
+            needing to encrypt data. The term <acronym>openssl</acronym> can refer both to the
+            specific command <command>openssl</command> as well as to the overall library, the
+            context will determine the suitable interpretation. </para>
+        <para>This library will among other things be used to setup a secure connection to our
+            Webmail based on the HTTP protocol. We should already now say that the management of SSL
+            (Secure Socket Layer) connections and the encryption/decryption keys via this library
+            and its tools is somewhat convoluted. A large part of the confusion (as witnessed by the
+            countless requests for help on the net) with this library is that very few takes the
+            time to understand it. As a result many of the "recepies" found on the net is obsolete,
+            misuses standards or are plain wrong. Unfortunate the developers of openssl and its
+            tools have been kind enough to maintain compatibility with very old ways of doing
+            things. This results in that old recepies that uses very antiquated ways still (kind of)
+            work. Since most people (even administrators) are more than happy to just use something
+            that seems to work (without understanding it) this has reulted in both some very bad
+            habits when useing openssl as well as potential security weaknesses and inconviniences
+            which could be easily avoided. </para>
+        <para>To remedy this situation we will explain in detailes and show the modern and secure
+            way of setting up the necessary encryption/decryption infrastructure. To really cover
+            all the details in an accessible way we have also added an entire appendix describing
+            how to use the library <xref xlink:href="#appendix.openssl"/>.</para>
+    </sect2>
+    <sect2>
+        <title>spamassassin</title>
+        <para>To help identify spam mails (i.e. unwanted junk mail) we will setup and use a
+                <application>Perl</application> library called
+                <application>spamassassin</application>. When a message is about to be delivered to
+            the local user it will first be run through spamassassin. This program will then examine
+            the message based on a number of both pre-defined and heuristic tests and give the mail
+            a score to determine the likelihood that the message is junk. The calculated score is
+            added as an additional header in the message.</para>
+        <para>After the score has been determined it is entirely up to the user that received the
+            message to use the calculated score for further actions. The most common example is to
+            have all messages above a certain score to be stored in the junk mail folder and those
+            with a really high score to be deleted right away. We will later on show how to add
+            procmail rules to handle this.</para>
+    </sect2>
+</sect1>

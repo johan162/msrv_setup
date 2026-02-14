@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>D.2 master.cf</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49727440"/>D.2 master.cf</h1></div></div></div>
+        
+        <p>For a setup that uses port 25 both to received encrypted and non-encrypted
+            communication it is enough to just uncomment the following line in the default master.cf </p>
+        <pre class="programlisting">tlsmgr    unix  -       -       n       1000?   1       tlsmgr</pre>
+        <p>To enable either the submission port (587) or the (obsoleted) SMTPS port (465) it is
+            necesary to adjust <code class="filename">master.cf</code> so that <acronym class="acronym">SMTPD</acronym> listens on that
+            port.</p>
+    </div></body></html>

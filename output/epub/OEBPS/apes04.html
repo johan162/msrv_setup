@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>E.4 Generating the Apache HTTPS key-pair</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49788480"/>E.4 Generating the Apache HTTPS key-pair</h1></div></div></div>
+        
+        <p>We will now generate the key-pair that will allow HTTPS traffic. We will show two ways
+            of doing this. The first (and simplest) is top just generate a key-pair which is valid
+            for exactly one common name, i.e. the name you access the browser with. On a home
+            network where you probably don’t have a DNS server you will most likely access the
+            server via an IP address directly. The problem with only having one name in the
+            certificate is that if you access the browser through some other methods (perhaps from
+            outside your router with a completely different IP address) you might again get a
+            warning about untrusted site even if you have imported browser public key. </p>
+        <p>The following command will generate a key-pair. As you can see we have added the
+            suffix “_req” to the public key. That is to remind ourself that this will just be used
+            as a certificate signing request, i.e. this public key has not yet been signed by our CA
+            key-pari created in the previous step. After we have signed the key it will be named
+            “https_public.pem” </p>
+        <pre class="screen">$&gt; <acronym class="acronym">openssl</acronym> req -new -nodes -keyout private/https_private.pem \
+-out csr/https_public_req.pem -config ./our_openssl.cnf</pre>
+        <p>Answer all the questions that you are now presented with. Keep in mind that every
+            certificate must have a unique distinguished name that is made up of the fields like
+            company name, city, department/unit etc. A recommendation is therefore to use “Web” (or
+            Apache or similar) as the unit name to differentiate this certificate from the other
+            mail certificate we need to create as a next step. </p>
+        <p>For future reference you should save all requests and keys. The request can be re-used
+            if the certificate has expired. So far we produced the following new files:</p>
+        <div class="itemizedlist"><ul class="itemizedlist"><li class="listitem">
+                <p><code class="filename">csr/https_public_req.pem</code>, This is the public key that we
+                    will sign with our CA keys</p>
+            </li><li class="listitem">
+                <p><code class="filename">private/https_private.pem</code>, This is our private key that
+                    will be loaded by Apache</p>
+            </li></ul></div>
+        <p>It is now time to sign the public key with our CA key. This is done with the
+            command</p>
+        <pre class="screen">$&gt; <acronym class="acronym">openssl</acronym> ca -out public/https_public.pem -config ./our_openssl.cnf \
+-infiles csr/https_public_req.pem</pre>
+        <p>Note: The config file has to be given on the command line before the “-infiles”
+            command! </p>
+        <p>Answer the questions and use the password for the private CA key we created in section
+            E.3. We have now generated the files</p>
+        <div class="itemizedlist"><ul class="itemizedlist"><li class="listitem">
+                <p>public/https_public.pem, This is the signed public certificate for
+                    Apache</p>
+            </li><li class="listitem">
+                <p>newcerts/&lt;some_large_serial_number&gt;.pem, A copy for our own record of the
+                    just created certificate. The naming is the serial number of the certificate.
+                </p>
+            </li></ul></div>
+        <p>This newly signed certificate is also recorded in our database file “index”</p>
+    </div></body></html>

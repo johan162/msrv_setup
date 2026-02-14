@@ -1,0 +1,705 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<appendix xmlns="http://docbook.org/ns/docbook"
+    revision="$Id: appendix05-openssl.xml 45 2012-01-16 23:27:57Z ljp $"
+    xmlns:xlink="http://www.w3.org/1999/xlink" version="5.0" xml:id="appendix.openssl">
+    <title>Create SSL/TLS keys and certificates with openssl</title>
+    <para>In the following we will create our own CA (Certification agency) that will sign all our
+        public keys. This means that to avoid the warnings in browsers about untrusted certificate
+        the CA certificate (our root certificate) should be imported into the browsers. As an
+        example we will show how this is done for the Chrome browser at the end of this appendix. </para>
+    <para>The main purpose of this section is to show how the bare bones “openssl” command can be
+        used to create certificates rather than relying on the simple but somewhat magical utility
+        scripts we used in the main discussion. We recommend that one you have gotten over the
+        initial chock of dealing with certificates this is actually a simpler method.</para>
+    <para>As convention we will use the extension *.pem for all keys (since this is the format they
+        keys are in). To distinguish between the public (the certificate) and private key we will
+        add “_public” and “_private” to the main name of the key-pair. </para>
+    <para>Some documentation uses the suffix “*.crt” and “*.key” for the public and private key in
+        PEM format. However, our opinion is that the suffix should reflect the format of the file
+        (in this case the PEM) format and the use of crt and key as suffixes make things unnecessary
+        complicated. Especially since one might believe that “*.crt” and “*.key” are in themselves
+        are new formats. </para>
+    <para>At the end of this walk-though we will have to generate the following key-pairs to use in
+        our setup</para>
+    <variablelist>
+        <varlistentry>
+            <term><filename>CA_public.pem</filename>, <filename>CA_private.pem</filename></term>
+            <listitem>
+                <para>This is our own “Root” certificate. This public key is implicitly trusted,
+                    i.e. it is trusted because we say so. No higher authority (but us) has
+                    sanctioned this key pair.</para>
+            </listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><filename>https_public.pem</filename>,
+                <filename>https_private.pem</filename></term>
+            <listitem>
+                <para> This is the keypair we will use with Apache when https connections are made
+                </para>
+            </listitem>
+        </varlistentry>
+        <varlistentry>
+            <term><filename>mail_public.pem</filename>, <filename>mail_private.pem</filename></term>
+            <listitem>
+                <para>This is the keypair that will be used for both Dovecot2 as well as postfix to
+                    encrypt both <acronym>IMAP</acronym> and <acronym>SMTP</acronym> protocols into IMAPS and SMTPS</para>
+            </listitem>
+        </varlistentry>
+    </variablelist>
+    <para>Optionally we might also have </para>
+    <variablelist>
+        <varlistentry>
+            <term><filename>https_alt_public.pem</filename>,
+                    <filename>https_alt_private.pem</filename></term>
+            <listitem>
+                <para>This is a keypair which makes it possible to access the server under several
+                    aliases. This if further described in section E.5</para>
+            </listitem>
+        </varlistentry>
+    </variablelist>
+    <para>In the process of generating these targets there will also be some intermediate files that
+        strictly speaking is not necessary to keep (but might come in handy later on as we shall
+        see).</para>
+    <para>The process is now as follows</para>
+    <orderedlist>
+        <listitem>
+            <para>Create the CA key-pair as a root certificate, i.e. it will be “signed” by itself.
+                It is trusted because we say so!</para>
+        </listitem>
+        <listitem>
+            <para>Handle the key-pair for https</para>
+            <orderedlist>
+                <listitem>
+                    <para>Create the key-pair, private and public key</para>
+                </listitem>
+                <listitem>
+                    <para>Prepare the public key to be signed by creating the “Certificate signing
+                        request” (CSR) based on the public key</para>
+                </listitem>
+                <listitem>
+                    <para>Sign the public key with our CA private key</para>
+                </listitem>
+            </orderedlist>
+        </listitem>
+        <listitem>
+            <para>Handle the key-pair for dovecot and postfix</para>
+            <orderedlist>
+                <listitem>
+                    <para>Create the key-pair, private and public key</para>
+                </listitem>
+                <listitem>
+                    <para>Prepare the public key to be signed by creating the “Certificate signing
+                        request” (CSR) based on the public key</para>
+                </listitem>
+                <listitem>
+                    <para>c. Sign the public key with our CA private key</para>
+                </listitem>
+            </orderedlist>
+        </listitem>
+    </orderedlist>
+    <para>Please read through the above steps again and make sure you understand the principle. (In
+        practice the creation of the key-pair and the signing request is done in one step – but
+        logically they are separate.)</para>
+    <para>
+        <caution>
+            <para>There is no shortage of description on the net on how to create so called
+                self-signed certificates. However many of them are dated and based on very old ways
+                of doing things which have just been inherited out of laziness and without propre
+                understanding of the tools involved. </para>
+            <para>For example, many descriptions do not add the “-nodes” flag as we do in these
+                examples. This will force a password to be created for the private key in
+                certificates and since this is usually not wanted (as described below) one extra
+                step is then required to remove the password. Hence making the description
+                unnecessarily complicated. Another example of obsoleted usage is the option
+                “nsCertType = server” in config files. This option is since long superseded and is
+                not even necessary in our context. Again, adding complexity where none is needed.
+                Another (very popular) complexity adder is to create the private key separately from
+                the certificate request with another obsoleted command; “openssl genrsa”. </para>
+            <para>Yet another plain wrong way that many HowTo:s show is to create the initial serial
+                number for the certificates in the database (that “openssl ca” keeps of all signed
+                certificates ) by simply storing a number one in a file (usually by “echo 01 >
+                serial”). Instead the option “-create_serial” should be given to let openssl
+                initialize a random 128 bit serial number. </para>
+            <para>Dealing with <acronym>SSL/TLS</acronym> certificate introduces many new terms and takes a while
+                getting used to especially since “openssl” is not exactly easy to use. It has
+                evolved (together with the standards) for a long time and old options that are since
+                long superseded remains. However, there is no need to make things more black magic
+                than necessary and the way we show below is what we believe the absolute easiest way
+                to accomplish what we need in the minimum number of steps.</para>
+        </caution>
+    </para>
+    <sect1>
+        <title>The use of the term “self-signed certificates”</title>
+        <para>The term self-signed certificate has two distinct meanings. It could mean that we sign
+            a certificate that we have generated our self with our own CA (root) certificate that we
+            have either created (most likely) or bought (highly unlikely). This is the way we use
+            the term self-signed certificate in this appendix. </para>
+        <para>It could also mean that we create a CA-type certificate which is (almost) a regular
+            certificate that it not signed by anyone but have a flag inside it that says “trust me,
+            because I say so – I’m a root certificate”. This is really what <acronym>openssl</acronym> means by
+            self-signing, the certificate is signed by itself. </para>
+        <para>Many of the tools out there create this latter type of certificate to avoid having to
+            create a separate CA (root certificate) </para>
+    </sect1>
+    <sect1>
+        <title>Preparations</title>
+        <para>When reading the description below you need to watch out for the order of the argument
+            to openssl. Sometimes it doesn’t matter but sometimes it does and the error message you
+            get will not really be helpful. For example, calling “openssl req -new –nodes . . .“
+            will work but calling “openssl req –nodes –new . . . ” will not work and fail with an
+            error message about unrecognized option “-nodes”. While logically this could be
+            explained it’s not really helpful if you are not used to the idiosyncrasies of openssl.
+            While we could use the default “/etc/ssl” as our working directory we do not recommend
+            this. Instead we create a pristine directory with our own setup so we won’t disturb
+            anything else. Later on it is also easy to create a safety backup of this directory. We
+            will therefore create a new directory which we will use to hold all keys and
+            intermediate files. Since <acronym>openssl</acronym> keeps track of all certificates we have signed by
+            means of a simple textual database (and a serial number) we must also setup those
+            initial helper files. </para>
+        <para> In this directory we will have four additional subdirectories:</para>
+        <itemizedlist>
+            <listitem>
+                <para><filename>“private”</filename> , Stores all private keys we create</para>
+            </listitem>
+            <listitem>
+                <para><filename>“public”</filename>, Stores all public keys (signed
+                    certificates)</para>
+            </listitem>
+            <listitem>
+                <para><filename>“csr”</filename> , Stores all certificate signing requests (public
+                    keys which have not yet been signed)</para>
+            </listitem>
+            <listitem>
+                <para><filename>“newcerts”</filename>, Stores a copy all our signed certificates
+                    (the “<command>openssl ca</command>” command will automatically store a copy of
+                    all signed certificate in this directory).</para>
+            </listitem>
+        </itemizedlist>
+        <para>Start by creating this directory structure as (we will name our root directory
+            “ca”):</para>
+        <screen>$> mkdir ca
+$> cd ca
+$> mkdir private
+$> mkdir public
+$> mkdir csr
+$> mkdir newcerts</screen>
+        <para>Now we create an empty file which later on will hod the the simple text database which
+            “openssl ca” uses to keep track of all certificates that we sign (openssl will complain
+            if this file doesn’t exist).</para>
+        <screen>$> touch index.txt</screen>
+        <para>We shall now create a config file for openssl. One way to do this would be to take the
+            supplied standard <acronym>openssl</acronym> config file (in /etc/ssl) and modify a few lines. However, we
+            will create our own smaller version so that we now the exact meaning of every single
+            line we have in the config file. This config file will also have some useful defaults to
+            save us some typing each time we create (or sign) a certificate. We will therefore
+            create our own minimal “our_openssl.cnf” as follows (you should probably name this file
+            after your site and remember to use that name in the commands that follows for
+            clarity).</para>
+        <programlisting>#======================================================================
+# Simplified <acronym>openssl</acronym> config file based on distributed <acronym>openssl</acronym> file
+# Version 1.0
+#======================================================================
+
+
+#######################################################################
+# CA Definitions – point to section where all default values can be
+# found.
+[ ca ]
+default_ca		= CA_default
+
+#######################################################################
+# "openssl ca" default parameters
+[ CA_default ]
+
+dir	= .
+new_certs_dir	= $dir/newcerts
+database	= $dir/index.txt
+certificate	= $dir/public/ca_public.pem     # Our CA (root) certificate (public key)
+private_key	= $dir/private/ca_private.pem   # The private key for our CA key-pair
+serial	= $dir/serial
+
+# In our case we will not really be using Certificate Revocation Lists
+# but we include the setup for future use
+crldir	= $dir/crl
+crlnumber	= $dir/crlnumber      
+crl 	= $crldir/crl.pem       
+
+default_days	= 3650    # We sign certificates that are valid for ~10 years
+default_md	= sha1    # The sha1 encryption method is recommended over the older md5
+name_opt	= ca_default
+cert_opt	= ca_default
+preserve	= no
+policy	= policy_match
+
+x509_extensions = usr_cert
+copy_extensions = copy   # Honor the certificatre
+
+####################################################################
+# The default policy for the CA when signing requests We only request
+# that certificate is from the same country
+[ policy_match ]
+countryName             = match
+stateOrProvinceName     = supplied   
+organizationName        = supplied   
+organizationalUnitName  = supplied   
+commonName              = supplied   
+emailAddress            = supplied   
+
+#######################################################################
+#Default values for use with “openssl req” command
+[ req ]
+default_bits		= 2048
+default_md		= sha1
+string_mask		= utf8only
+distinguished_name	= req_distinguished_name
+req_extensions	= v3_req    # Extensions to add when creating certificate requests
+x509_extensions 	= v3_ca     # Extensions to add to self-signed certificates
+
+#######################################################################
+# Prompts and default values for the fields in the DN
+[ req_distinguished_name ]
+0.organizationName		= Organization Name
+0.organizationName_default		= Aditus
+
+organizationalUnitName		= Unit or department in organization
+organizationalUnitName_default	= IT-Adm
+
+emailAddress			= Email Address
+emailAddress_max		= 64
+emailAddress_default		= admin@aditus.nu
+
+localityName			= City or district
+localityName_default		= Sundbyberg
+
+stateOrProvinceName		= State or Province Name
+stateOrProvinceName_default	= Sundbyberg
+
+countryName			= Country Code (2 letter code)
+countryName_min		= 2
+countryName_max		= 2
+countryName_default		= SE
+
+commonName			= Common Name (hostname, IP, or your name)
+commonName_max		= 64
+
+#######################################################################
+# Extension values used when signing certificates as a CA
+[ usr_cert ]
+basicConstraints=CA:false
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer
+
+
+#######################################################################
+# For the normal case where we do not create CA certificate but only 
+# ordinary client certificates
+[ v3_req ]
+basicConstraints=CA:false
+subjectKeyIdentifier=hash
+
+# Uncomment the following if you want the certificate request generated on this server
+# to have several aliases for the common name. Unfortunately this parameter can not be 
+# given on the command line. 
+# (Alternatively this could be specified as “subjectAltName = DNS:example.com, 
+# DNS:www.example.com” instead as a list as we have done it now.
+# subjectAltName = @alt_names
+
+# Alias name for this server when creating signing requests. These are just examples!!
+# Uncomment the following section and set proper names
+#[ alt_names ]
+#DNS.1 = sigma1
+#DNS.2 = sigma1.nil
+
+#######################################################################
+# Section to be added when we give the command line option -extensions v3_ca
+# together with the x509 option meaning that this should be a self-signed 
+# certificate, i.e CA=TRUE
+[ v3_ca ]
+basicConstraints        = CA:TRUE
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always,issuer:always
+
+#EOF
+</programlisting>
+    </sect1>
+    <sect1>
+        <title>Generating the CA key-pair</title>
+        <para>We are now in position to generate our root (CA) certificate. The first step is to
+            create the key-pair and the signing request</para>
+        <screen>$> <acronym>openssl</acronym> req -new -keyout private/ca_private.pem -out csr/ca_public_req.pem \
+-config ./our_openssl.cnf</screen>
+        <para>The next step is for us to sign it our self</para>
+        <screen>$> <acronym>openssl</acronym> ca -create_serial -out public/ca_public.pem -selfsign -extensions v3_ca \
+-config our_openssl.cnf -days 7000 -infiles csr/ca_public_req.pem</screen>
+        <para>This will prompt you for a number of things most of them have default values as
+            specified in the config file. Do not forget the password you gave here for the CA
+            private key. </para>
+        <para>The special options used for the CA signing as compared to all the signings we will do
+            from here on are he two options</para>
+        <itemizedlist>
+            <listitem>
+                <para><code>-selfsign</code>, Which tells <acronym>openssl</acronym> to use the
+                        <filename>ca_public_req.pem</filename> when signing instead of expecting a
+                    CA certificate (which we haven’t created yet)</para>
+            </listitem>
+            <listitem>
+                <para><code>-extension v3_ca</code>, needed to read the <code>v3_ca</code> section
+                    in the config file.</para>
+            </listitem>
+        </itemizedlist>
+        <para>Our CA certificate (root certificate) will be valid for roughly 20 years (~7000 days).
+            We have now produced the following files:</para>
+        <itemizedlist>
+            <listitem>
+                <para><filename>private/ca_private.pem</filename>, The password protected private
+                    key part of our CA-key pair. This file should be kept secret at all
+                    times!</para>
+            </listitem>
+            <listitem>
+                <para><filename>public/ca_public.pem</filename>, The public key that should be
+                    imported into browsers that we want to accept any other public leys
+                    (certificates) that we will sign in the future.</para>
+            </listitem>
+            <listitem>
+                <para><filename>csr/ca_public_req.pem</filename>, The signing request for our
+                    CA</para>
+            </listitem>
+            <listitem>
+                <para>serial, This is an administrative file used by “<code>openssl ca</code>” to
+                    give a unique serial number for each of the certificate that we sign.</para>
+            </listitem>
+            <listitem>
+                <para><filename>newcerts/&lt;random_serial_number>.pem</filename>, A copy of our
+                    signed certificate. The exact name is random since it starts with the serial
+                    number that was randomly generated. From this moment on each serial number will
+                    be incremented by one for each new certificate that we sign.</para>
+            </listitem>
+        </itemizedlist>
+        <para>Many other tutorials show what seems to be a simpler way to create root certificate in
+            only one step using the <code>–x509</code> option with openssl. As in </para>
+        <para>
+            <screen>$> <acronym>openssl</acronym> req -new -x509 -extensions v3_ca -keyout private/ca_private.pem \ 
+-out public/ca_public.pem -days 7000 -config ./our_openssl.cnf </screen>
+        </para>
+        <para>However, we do not recommend this way since it has a number of drawbacks: </para>
+        <itemizedlist>
+            <listitem>
+                <para>You cannot use –create_serial with the “req” command</para>
+            </listitem>
+            <listitem>
+                <para>The signing request is not kept </para>
+            </listitem>
+            <listitem>
+                <para>There is no copy for our signed root certificate in newcerts as it is with all
+                    other cert we created </para>
+            </listitem>
+        </itemizedlist>
+        <para>This could however be used in another way. If you need to quickly create a
+            “test-certificate” (which isn’t signed by any trusted authority or yourself) you could
+            create such a certificate in the same way (no need to include the <code>–extensions
+                v3_ca</code> in this case though) such as </para>
+        <para>
+            <screen>$> <acronym>openssl</acronym> req -new –nodes -x509 -keyout private/tstcert_private.pem \ 
+-out public/tstcert_public.pem -days 7000 -config ./our_openssl.cnf </screen>
+        </para>
+        <para>You can now use the resulting certificate if you need to run some quick test with some
+            software that requires a <acronym>SSL/TLS</acronym> certificate (key-pair).</para>
+        <para>
+            <note>
+                <para>Note on x509v3 compliancy. The CA certificate we have created here is, while
+                    perfectly working, not formally fully compliant with the very latest version of
+                    the PKIX and X509v3 standards since that requires the email address to be
+                    specified in a slightly different place. This is however of no practical concern
+                    for us (unless you plan on starting your own worldwide certification agency and
+                    charge money for signing certificates)</para>
+            </note>
+        </para>
+    </sect1>
+    <sect1>
+        <title>Generating the Apache HTTPS key-pair</title>
+        <para>We will now generate the key-pair that will allow HTTPS traffic. We will show two ways
+            of doing this. The first (and simplest) is top just generate a key-pair which is valid
+            for exactly one common name, i.e. the name you access the browser with. On a home
+            network where you probably don’t have a DNS server you will most likely access the
+            server via an IP address directly. The problem with only having one name in the
+            certificate is that if you access the browser through some other methods (perhaps from
+            outside your router with a completely different IP address) you might again get a
+            warning about untrusted site even if you have imported browser public key. </para>
+        <para>The following command will generate a key-pair. As you can see we have added the
+            suffix “_req” to the public key. That is to remind ourself that this will just be used
+            as a certificate signing request, i.e. this public key has not yet been signed by our CA
+            key-pari created in the previous step. After we have signed the key it will be named
+            “https_public.pem” </para>
+        <screen>$> <acronym>openssl</acronym> req -new -nodes -keyout private/https_private.pem \
+-out csr/https_public_req.pem -config ./our_openssl.cnf</screen>
+        <para>Answer all the questions that you are now presented with. Keep in mind that every
+            certificate must have a unique distinguished name that is made up of the fields like
+            company name, city, department/unit etc. A recommendation is therefore to use “Web” (or
+            Apache or similar) as the unit name to differentiate this certificate from the other
+            mail certificate we need to create as a next step. </para>
+        <para>For future reference you should save all requests and keys. The request can be re-used
+            if the certificate has expired. So far we produced the following new files:</para>
+        <itemizedlist>
+            <listitem>
+                <para><filename>csr/https_public_req.pem</filename>, This is the public key that we
+                    will sign with our CA keys</para>
+            </listitem>
+            <listitem>
+                <para><filename>private/https_private.pem</filename>, This is our private key that
+                    will be loaded by Apache</para>
+            </listitem>
+        </itemizedlist>
+        <para>It is now time to sign the public key with our CA key. This is done with the
+            command</para>
+        <screen>$> <acronym>openssl</acronym> ca -out public/https_public.pem -config ./our_openssl.cnf \
+-infiles csr/https_public_req.pem</screen>
+        <para>Note: The config file has to be given on the command line before the “-infiles”
+            command! </para>
+        <para>Answer the questions and use the password for the private CA key we created in section
+            E.3. We have now generated the files</para>
+        <itemizedlist>
+            <listitem>
+                <para>public/https_public.pem, This is the signed public certificate for
+                    Apache</para>
+            </listitem>
+            <listitem>
+                <para>newcerts/&lt;some_large_serial_number>.pem, A copy for our own record of the
+                    just created certificate. The naming is the serial number of the certificate.
+                </para>
+            </listitem>
+        </itemizedlist>
+        <para>This newly signed certificate is also recorded in our database file “index”</para>
+    </sect1>
+    <sect1>
+        <title>Generating the Dovecot/postfix key-pair</title>
+        <para>This is done exactly analogue (but with the obvious change of filenames) as when we
+            created the HTTPS key-pair. The commands to create the key-pair are the
+            following.</para>
+        <para>First create the signing request</para>
+        <screen>$> openssl req -new -nodes -keyout private/mail_private.pem \
+-out csr/mail_public.pem -config ./out_openssl.cnf</screen>
+        <para>And then signing this request with our own root certificate</para>
+        <screen>$> <acronym>openssl</acronym> ca -out public/mail_public.pem -config ./our_openssl.cnf \
+-infiles csr/mail_public_req.pem</screen>
+        <para>These lines have now created the following files</para>
+        <itemizedlist>
+            <listitem>
+                <para><filename>private/mail_private.pem</filename>, The private key for our mail
+                    setupcc</para>
+            </listitem>
+            <listitem>
+                <para><filename>public/mail_public.pem</filename>, The public key for our mail
+                    setup</para>
+            </listitem>
+            <listitem>
+                <para><filename>csr/mail_public_req.pem</filename>, The signing request. This is not
+                    needed any more but could be kept to re-generate the certificate when it expires
+                    in 10 years.</para>
+            </listitem>
+            <listitem>
+                <para><filename>newcerts/02.pem</filename>, A copy of the signed certificate for our
+                    records as a certification agency</para>
+            </listitem>
+        </itemizedlist>
+    </sect1>
+    <sect1>
+        <title>Generating a certificate with multiple common names</title>
+        <para>As mentioned above most people create certificates as we did above. However, for the
+            case the same server is accessed through many names (for example “www.myserver.com” or
+            “myserver.com” or “199.243.243.12” etc) this certificate will still generate a warning
+            if we access the server with any other name besides what we used when we created the
+            certificate signing request. To create a certificate with multiple alternative names
+            requires some additional setup. In the preparation section our “openssl.cnf” contains
+            all the necessary parameters but we need to uncomment them. First uncomment the
+            line</para>
+        <screen>copy_extensions = copy</screen>
+        <para>Then uncomment and setup the lines at the end of the file</para>
+        <screen>subjectAltName = @alt_names
+
+# Alias name for this server when creating signing requests. 
+# These are just examples!!
+# Uncomment the following section and set proper names
+[alt_names]
+DNS.1 = example.com
+DNS.2 = www.example.com
+DNS.3 = 199.199.199.199</screen>
+        <para>To match the values you want to have. The you can just generate the certificate as in
+            the same way we did before (we just use a different name for the certificate to keep
+            them apart)</para>
+        <screen>$> <acronym>openssl</acronym> req -new -nodes -keyout private/https_alt_private.pem \
+        -out csr/https_alt_public_req.pem -config ./openssl.cnf</screen>
+        <para><emphasis role="bold">Note:</emphasis> You must change some entry in the DN fields
+            compared to the previously created HTTPS certificate since our Database for certificates
+            we have signed must all have unique DN. You could for example change your CN (Common
+            Name).</para>
+        <para>We can view the request to make sure that we have the alternative names included with
+            the command.</para>
+        <screen>$> <acronym>openssl</acronym> req –in csr/https_alt_public_req.pem –noout –text</screen>
+        <para>and in the long output the following lines can bee seen</para>
+        <screen>    Requested Extensions:
+            X509v3 Basic Constraints:
+                CA:FALSE
+            X509v3 Subject Key Identifier:
+                7A:2E:34:23:E5:EB:D3:15:56:9F:8E:D9:07:13:6C:7D:14:40:E1:B2
+            X509v3 Subject Alternative Name:
+                DNS:199.199.199, DNS:example.com, DNS:www.example.com
+                . . .</screen>
+        <para>The ones marked with red states the alternative names that can be used with this
+            certificate. It is now time to sign it the certificate</para>
+        <screen>$> <acronym>openssl</acronym> ca -out public/https_alt_public.pem -config ./openssl.cnf \
+-infiles csr/https_alt_public_req.pem</screen>
+        <para>And after this command we have the following new files</para>
+        <itemizedlist>
+            <listitem>
+                <para><filename>public/https_alt_public.pem</filename></para>
+            </listitem>
+            <listitem>
+                <para><filename>private/https_alt_private.pem</filename></para>
+            </listitem>
+            <listitem>
+                <para><filename>csr/https_public_req.pem</filename></para>
+            </listitem>
+            <listitem>
+                <para><filename>newcerts/03.pem</filename></para>
+            </listitem>
+        </itemizedlist>
+    </sect1>
+    <sect1>
+        <title>Keeping both the certificate and key in the same file</title>
+        <para>It is useful to know that if some servers only give you the option to specify one
+            <acronym>SSL/TLS</acronym> file you must combine both the public (certificate) and the private key in one
+            file. You can easily do this as</para>
+        <screen>$> cat private/mail_private.pem public/mail_public.pem > mail_combined.pem</screen>
+        <para>You could also do this for Dovecot and postfix since they will read the correct key
+            based on the headers in the file. Some might think that this is better way of keeping
+            out key-pair since we can never lose one key in the key-pair if we keep them
+            combined.</para>
+    </sect1>
+    <sect1>
+        <title>Converting to other certificate formats</title>
+        <para>As mentioned previously there are other variant formats besides PEM used to store
+            certificates and keys. More specifically there are two other formats commonly usedas
+            described below.</para>
+        <sect2>
+            <title>DER format</title>
+            <para><emphasis role="bold">File suffix:</emphasis>
+                <filename>*.der</filename></para>
+
+        <para><acronym>DER</acronym> stands for Distinguished Encoding Rules. This format is also
+                quite often used on MS Windows system as well as with Java. This is a binary format
+                so it cannot directly be viewed as a text file (in opposite from the pem
+                format).</para>
+        <para>Convert an existing certificate in PEM format to the equivalent DER format is straight
+            forward using openssl</para>
+        <screen>$> openssl x509 -inform pem -in certificate.pem -outform der \
+-out certificate.der</screen>
+        </sect2>
+        <sect2>
+            <title>PKCS #12 format</title>
+            <para><emphasis role="bold">File suffix:</emphasis>
+                <filename>*.p12</filename></para>
+            <para><acronym>PKCS</acronym> stands for <termdef>Public-Key Cryptography
+                    Standards</termdef> and #12 is a format in which both a private and a public key
+                is stored in the same file for the purpose of authentication.</para>
+            <para>The <acronym>PKCS</acronym> format is part of a larger set of standards defined by
+                the <link xlink:href="http://www.rsa.com/rsalabs/node.asp?id=2124">RSA
+                    Laboratories</link>. Some of these standard are also defined as RFCs. This
+                specific standard (#12) is a format used to store client certificates. Client
+                certificates are used in analogy to server certificates but to identify the client
+                and not a server. A server can for example be setup in such a way that a client must
+                have a trusted certificate in order to connect to the server. The server trusts a
+                specific certificate if the certificate have been signed by an authority accepted by
+                the server.</para>
+            <para>It would bring to far to go through all the details of this format here. However
+                this type of format is handled by the <literal>pkcs12</literal> subcommand to
+                    <command>openssl</command> command. </para>
+            <para>To create a client certificate to be used for authentication based on a existing
+                key-pair use the command</para>
+            <screen>$> openssl pkcs12 -export -clcerts -in mypublickey.pem \
+-inkey myprivatekey.pem -out myclcert.p12</screen>
+            <para>One difference here is that the client certificate will be protected by a password
+                so this will have to be given when the certificate is created
+                    (<application>openssl</application> will ask for it).</para>
+            <para>In order to view some details an existing client certificate use the following
+                command</para>
+            <screen>$> openssl pkcs12 -noout -info -in myclcert.p12
+Enter Import Password: <emphasis role="italic">&lt;SECRET_PASSWORD></emphasis>
+MAC Iteration 2048
+MAC verified OK
+PKCS7 Encrypted data: pbeWithSHA1And40BitRC2-CBC, Iteration 2048
+Certificate bag
+PKCS7 Data
+Shrouded Keybag: pbeWithSHA1And3-KeyTripleDES-CBC, Iteration 2048</screen>
+            <para>In the output there is a statements about "<literal>MAC verified OK</literal>". In
+                this context <acronym>MAC</acronym> stands for <termdef>Message Authentication
+                    Code</termdef> and is a way to guarantee that the certificate is valid and has
+                not been tampered with. The reference to <literal>PKCS #7</literal> refers to
+                specific message syntax which is detailed in <link
+                    xlink:href="http://tools.ietf.org/html/rfc2315">RFC2315</link></para>
+        </sect2>
+    </sect1>
+    <sect1>
+        <title>Certification Revocation List (CRL) and OCSP</title>
+        <para>One thing that we haven't yet touched upon is the directory <filename role="directory"
+                >crl/</filename> under the apache configuration directory. This directory is used to
+            store a Certificate Revocation List. Basically a list of certificates that the issuer
+            might revoked and should no longer be trusted. From the server perspective this is used
+            to verify that any certificate a client might present is still valid.</para>
+        <para>The problem with such a revocation list is that it must be constantly renewed to be of
+            any value. In addition both the client and the server needs to have access to an updated
+            revocation lists since neither part can really trust the other part. </para>
+        <para>For the reason with the need of constant updates of the revocation lists this has too
+            large extent been replaced by online direct checking using what is known as
+                <acronym>OCSP</acronym> (Online Certificate Status Protocol). Basically the client
+            will verify any certificate given by the server by going online and check a central
+            revocation lists on a dedicated certificate server. </para>
+        <para>Ideally all official root certificates (<acronym>CA</acronym> certificates) will have
+            ps59D7005DKsuch a server. So for example if a server claims to have a certificate
+            verified by, say, Verisign the client will go online to the Verisign
+                <acronym>OCSP</acronym> server and double check that the certificate is really still
+            valid. </para>
+        <para>We will not discuss this any further in this tutorial but should the need to setup a
+            certificate server arise the open source server "<acronym>OpenCA</acronym>" (<link
+                xlink:href="http://www.openca.org/">http://www.openca.org/</link>\) server might be
+            good candidate to examine since it also includes a OCSPD server daemon.</para>
+    </sect1>
+    <sect1>
+        <title>Summary</title>
+        <para>With the above steps we have created the key-pairs we need for both the Web-server as
+            well as the mail servers (Dovecot2 and postfix). You should now take a backup of this
+            directory and keep it in a safe place. When you later on upgrade your servers you should
+            restore these certificates to avoid client warnings. </para>
+        <para>Since there is quite a lot of text in the previous section we just repeat the actual
+            commands below that we used to create the key-pairs to make it clearer that it is not
+            that difficult. Each command set first creates the key-pair and then signs it. </para>
+        <caution>
+            <para>Remember to uncomment and set the “<literal>subjectAltName</literal>” in the
+                configuration file if you want your certificates to be valid for multi-homed
+                servers, i.e. servers that are accessed with several different DNS names (but only
+                one IP-address).</para>
+        </caution>
+        <sect2>
+            <title>Creating the CA (root certificate)</title>
+            <screen>$> <acronym>openssl</acronym> req -new -keyout private/ca_private.pem \
+-out csr/ca_public_req.pem -config ./our_openssl.cnf
+$> <acronym>openssl</acronym> ca -create_serial -out public/ca_public.pem \
+-selfsign -extensions v3_ca -config our_openssl.cnf \
+-days 7000 -infiles csr/ca_public_req.pem</screen>
+        </sect2>
+        <sect2>
+            <title>Creating the Apache HTTPS certificate</title>
+            <screen>$> <acronym>openssl</acronym> req -new -nodes -keyout private/https_private.pem \
+-out csr/https_public_req.pem -config ./our_openssl.cnf
+$> <acronym>openssl</acronym> ca -out public/https_public.pem -config ./our_openssl.cnf \
+-infiles csr/https_public_req.pem</screen>
+        </sect2>
+        <sect2>
+            <title>Creating the mail certificate</title>
+            <screen>$> <acronym>openssl</acronym> req -new -nodes -keyout private/mail_private.pem \
+-out csr/mail_public_req.pem -config ./our_openssl.cnf
+$> <acronym>openssl</acronym> ca -out public/mail_public.pem -config ./our_openssl.cnf \
+-infiles csr/mail_public_req.pem</screen>
+        </sect2>
+    </sect1>
+</appendix>

@@ -1,0 +1,452 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?hard-pagebreak?>
+<sect1 xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
+    version="5.0" revision="$Id: section01.xml 56 2012-07-23 19:38:49Z ljp $">
+    <title>Introduction</title>
+
+    <para>With the almost ubiquitous presence of mobile devices it becomes crucial to be able to
+        access mail from any device anywhere and still read and manipulate the same mails regardless
+        of which device is used. The easiest way to achieve this with close to zero setup effort is
+        to use a public mail provider, for example GMail, Hotmail etc. </para>
+    <para>However for users that require more fine grained control over message handling a public
+        mail provider might not be a viable option. Reasons that might require such a setup includes
+        but are not limited to:</para>
+    <itemizedlist>
+        <listitem>
+            <para>need for automatic processing of messages with external programs at message
+                arrival (such as automatic replies depending on message content or perform other
+                pre-defined actions such as scannig messages for viruses)</para>
+        </listitem>
+        <listitem>
+            <para>control over mail backup</para>
+        </listitem>
+        <listitem>
+            <para>collection of mails from several accounts into one master repository</para>
+        </listitem>
+        <listitem>
+            <para>unable to comply with the license of the public mail provider</para>
+        </listitem>
+        <listitem>
+            <para>need for an ad-free mail client</para>
+        </listitem>
+        <listitem>
+            <para>needs mail to be sent from a specific domain</para>
+        </listitem>
+        <listitem>
+            <para>privacy concerns</para>
+        </listitem>
+    </itemizedlist>
+    <para>The rest of this tutorial will be spent going through, in details, how to make such a
+        setup based on a OpenSuSE Linux/GNU distribution.</para>
+    <sect2>
+        <title>Why another mail tutorial?</title>
+        <para>There is no shortage of various notes and tutorials trying to show how to do a server
+            setup like this. Our experience is however that many of them, while working (in some
+            respect), have one or more misunderstandings or present obsoleted knowledge based on old
+            ways of doing things. In many cases recommendations are handed down from older tutorial
+            and seen as truth - because they work - but are incomplete or in worst case have been
+            deprecated since long. </para>
+        <para>This tutorial, while substantially longer, aims at describing a correct and modern
+            setup as well as how it works and how the components interact. Many misunderstanding
+            stem from a poor grasp of the overall picture on how these component fits together. It
+            is our belief that in order to configure a working setup one must understand what one is
+            doing. Just taking random bits of code from "the net" might give, by sheer luck, a
+            working setup but it might as likely have created an open relay for spammers to use
+            (which is very bad).</para>
+        <para>Especially the <acronym>SSL/TLS</acronym> setup using <acronym>openssl</acronym> will
+            be covered and explained in more details than usual in descriptions like this since much
+            information available on "the net" is just plain wrong or at best shows very, very,
+            antiquated ways of configuring a <acronym>SSL/TLS</acronym> setup. </para>
+        <para><emphasis role="bold">Goals with this tutorial</emphasis></para>
+        <para>The setup we will describe in this tutorial will allow any device capable of
+                <acronym>IMAP</acronym> message handling (all modern devices do) to connect and
+            synchronize mails from a central repository meaning that any change from any device will
+            be visible to all other devices. The setup will also allow clients to send mails through
+            this server (acting as an <acronym>SMTPD</acronym> server). </para>
+        <para>The setup assumes a "home server" which is not directly connected to the internet and
+            configured as an official mail server for some domain. This also implies the need to
+            relay mails to be sent through a “real” mail server (most likely an
+                <acronym>ISP</acronym>s server) that is properly connected to the internet. An
+            overview of the principle of our setup and all constituting parts are shown in <xref
+                xlink:href="#fig.mail-overview"/>.</para>
+        <para>The goal of this tutorial is therefore to describe, in a very detailed way, how to
+            setup an OpenSuSE server to both act as an <acronym>IMAP</acronym> and <acronym>SMTP</acronym> server. In addition it will use
+            encrypted communication using a <acronym>SSL/TLS</acronym> setup based on the <code>openssl</code> library.
+            This will allow secure mail access from any device (e.g. SmartPhones, Ipads, laptops
+            etc.) using either the device's built-in mail client or optionally connected to our web
+            based mail client. </para>
+    </sect2>
+    <sect2 xml:id="section.prereq">
+        <title>Applicable OpenSuSE versions and pre-requisites</title>
+        <para>Much of the information here is generic and not specific to OpenSuSE. However,
+            location and structure of specific configuration files are distribution dependent. This
+            document has been verified on OpenSuSE 11.4 as well as 12.1. Most ofthe details given in
+            this tutorial should also be valid on older 11.x OpenSuSE releases. OpenSuSE resembles
+            the RedHat distribution in some respect but has enough differences of its own to not
+            make it directly compatible. Other systems (for example Ubuntu) uses a rather different
+            setup structure so while the principles still apply the details will not match.</para>
+        <para>One main difference noticeable between 11.4 and 12.1 is that in 12.1 the older SySV
+            init file handling has been replaced with the more modern <literal>systemd</literal>
+            init file handling. This has several advantages such as parallelizing startup scripts
+            (hence reducing boot time). Fortunately there is a compatibility layer so that old
+                <filename role="directory">/etc/init.d/</filename> startup scripts will work as
+            usual and redirect the start/stop commands to <literal>systemd</literal> (see <link
+                xlink:href="http://news.opensuse.org/2011/12/22/systemd-%E2%80%93-boot-faster-and-cleaner-with-opensuse-12-1/"
+                >systemd – boot faster and cleaner</link>)</para>
+        <tip>
+            <para>When installing OpenSuSE chose the desktop as "<emphasis role="italic">Minimal
+                    Server Selection (Text Mode)</emphasis>" as illustrated in <xref
+                    xlink:href="#fig.suse-text-server"/>. Note that in order to get to this screen
+                the installation must be run in manual mode and not automatic.</para>
+            <para>
+                <figure xml:id="fig.suse-text-server">
+                    <title>Chosing text server when installing OpenSuSE</title>
+            <mediaobject>
+                <imageobject role="fo">
+                    <imagedata fileref="figures/suse-text-server.png" scalefit="1" width="50%" contentwidth="50%"/>
+                </imageobject>
+                <imageobject role="html">
+                    <imagedata fileref="figures/suse-text-server.png" contentwidth="80%"/>
+                </imageobject>                
+            </mediaobject>
+                </figure>
+                </para>
+        </tip>
+        <sect3>
+        <title>Installed components</title>
+        <para>We will assume that all the components listed below are installed on the server. They
+                are all available (with one exception as noted below) from the standard OpenSuSE
+                repository as packages. For now it is enought if these components are installed but
+                not configured - this is what the rest of this tutorial is all about. All these
+                components can be installed from the Yast2 package manager as listed below (the
+                "core packages" indicates the minimum needed packages.)</para>
+        <para>
+            <itemizedlist>
+                <listitem>
+                    <para><emphasis role="bold">Apache v2.x</emphasis> - <acronym>HTTP</acronym>
+                        server (will be referred to as only Apache in the rest of the
+                        document).</para>
+                    <para>Core packages: <literal>apache2</literal>,
+                            <literal>apache2-prefork</literal>, <literal>apache2-utils</literal>,
+                            <literal>libapr-util1</literal>, <literal>libapr1</literal></para>
+                </listitem>
+                <listitem>
+                    <para><emphasis role="bold">PHP5</emphasis> - With at least the modules
+                            <code>php5-curl</code>, <code>php5-openssl</code> and
+                            <code>php5-sockets</code> installed</para>
+                    <para>Core packages: <literal>apache2-mod_php5</literal>,
+                            <literal>php5-mysql</literal>,<literal>php5-curl</literal>,
+                            <literal>php5-openssl</literal>, <literal>php5-sockets</literal></para>
+                </listitem>
+                <listitem>
+                    <para><emphasis role="bold">Postfix</emphasis> - Mail daemon used to receive and
+                        send mails. </para>
+                    <para><emphasis role="italic"><emphasis role="bold">Note:</emphasis> The default
+                                mail daemon (<acronym>MTA</acronym>) in OpenSuSE 12.1 has changed to
+                                    <literal>exim</literal> if a full KDE/X-Windows installation is
+                                done). This means installing postfix might trigger a warning that it
+                                conflicts with <literal>exim</literal> and that it will be
+                                un-installed. Just answer yes in that case.</emphasis></para>
+                    <para>Core packages: <literal>postfix</literal></para>
+                </listitem>
+                <listitem>
+                    <para><emphasis role="bold">Fetchmail</emphasis> - Used to fetch messages from
+                        other mail accounts</para>
+                    <para>Core packages: <literal>fetchmail</literal></para>
+                </listitem>
+                <listitem>
+                    <para><emphasis role="bold">Dovecot v2.x</emphasis> - <acronym>IMAP</acronym>
+                        server that allows access to your stored mails. </para>
+                    <para><emphasis role="bold">Note:</emphasis> Makes sure that Dovecot 2.x is
+                        installed and not Dovecot 1.x. OpenSuSE by default installs the older
+                        version 1.x of Dovecot. Dovecot 2.x is available in the OpenSuSE
+                        repositories (as dovecot2). We will simple refer to this as Dovecot.</para>
+                    <para>Core packages: <literal>dovecot20</literal></para>
+                </listitem>
+                <listitem>
+                    <para><emphasis role="bold">MySQL</emphasis> - Database server (needed for the
+                            <application>Roundcube</application> webmailer)</para>
+                    <para>Core packages: <literal>mysql-community-server</literal>,
+                            <literal>mysql-community-server-client</literal>
+                    </para>
+                </listitem>
+                <listitem>
+                    <para><emphasis role="bold">Procmail</emphasis> - Used for rule based mail
+                        filtering which will allow things like sorting mails into folders depending
+                        on there content or do other types of automatic processing based on the
+                        content of the messages.</para>
+                    <para>Core packages: <literal>procmail</literal></para>
+                </listitem>
+                <listitem>
+                    <para><emphasis role="bold">Spamassassin</emphasis> - Tool to help identify junk
+                        mails (spam)</para>
+                    <para>Core packages: <literal>spamassassin</literal>,
+                            <literal>perl-Mail-Spamassassin</literal></para>
+                </listitem>
+                <listitem>
+                    <para><emphasis role="bold">openssl</emphasis> - Tool to handle encryption and
+                        creation of certificates (this package is installed by default in the
+                        Minimal Server Selection)</para>
+                    <para>Core packages: <literal>openssl</literal></para>
+                </listitem>
+            </itemizedlist>
+        </para>
+        <para>
+            <caution>
+                <para>Please make absolutely sure that all of the above components are installed
+                    before proceeding!</para>
+                <para>All necessary component can be installed by running the following command as
+                    root</para>
+                <screen>$> zypper in apache2 apache2-prefork apache2-mod_php5 php5-curl \
+php5-openssl php5-sockets postfix fetchmail dovecot20 procmail \
+mysql-community-server mysql-community-server-client \
+spamassassin perl-Mail-Spamassassin
+                </screen>
+            </caution>
+        </para>
+        <para>There is also one final package that strictly speaking is not necessary but strongly
+                recommended. This is to install a Web-based mail client. Having a web-based mail
+                setup has the advantage that it will allow safe and secure access (using https://)
+                to mails from any networked computer in the world. In this tutorial we will use
+                    "<emphasis role="bold">Roundcube</emphasis>" (<link
+                    xlink:href="http://roundcube.net/">http://roundcube.net/</link>). </para>
+        <para>The application style of the modern (and <acronym>AJAX</acronym> based) Roundcube also
+            makes it a compelling alternative even to native mail clients such as KMail. Roundcube
+            is not as of this writing available as a package for OpenSuSE. However as a
+            Web-applications it is straightforward to install and set it up using the included
+            installer.</para>
+</sect3>      
+        <sect3>
+        <title>What level of experience is needed and how long will it take?</title>
+        <para>A certain maturity with Linux is assumed but mostly the ability (and willingness) to
+            lookout for details is what matters. As in a mathematical proof every single detail
+            counts. There are literally hundreds of pages in the manuals for all the components we
+            touch upon here so the details described here are only the details that really matters -
+            the <emphasis role="italic">need to know details</emphasis>.</para>
+        <para>Setting up a complete <acronym>IMAP</acronym>/<acronym>SMTP</acronym> server correctly
+            the first time requires an eye for details. Even experienced administrators will make
+            mistakes. The main advantage with experience is that debugging various issues gets
+            faster since likely problem spots are known by experience. </para>
+        <para>The setup of a working server will likely take several hours rather than minutes. So
+            patience is needed as well as careful reading with a willingness to go back and double
+            check everything at least three times! </para>
+            <para>As the installation progress make notes on what config files have been changed and
+                what other actions has been performed. After a while it will simply be impossible to
+                remember all the little details and what has been done and not.</para>
+            <tip>                
+                <para>We strongly encourage to install the server in a <emphasis role="bold">virtual
+                        machine installation</emphasis> (for example using
+                        <application>VirtualBox</application>) since that will easily allow going
+                    back to a known pristine state in case of "unrecoverable error". Compare this
+                    with having to re-install a physical  server since one is not sure after a while
+                    which of all the settings that were changed was wrong.</para>
+                <para>Once a working server in a virtual machine is established it is also easy to
+                    move the virtual server, for example to a new server when the hardware is
+                    upgraded. This allows an easy upgrade path to future OpenSuSE version as well
+                    without having to reconfigure a complete mail server at each upgrade. When in
+                    the future OpenSuSE v13.1, v14.1, etc. comes out there is nothing that prevents
+                    running a virtual mail server based on 11.4 or 12.1. The core protocols of the
+                    internet are not very likely to have changed dramatically even by then so the
+                    virtual server will still be valid.</para>
+                <para>OpenSuSE has pre-built packages for <application>VirtualBox</application>
+                    which makes it straight forward to install. </para>
+                <para>The only minimal drawback with a virtual server is the need to reserve some
+                    RAM memory. However, given that it is perfectly fine to run a complete mail
+                    setup on 512MB (or less) this should be considered a small price to pay for the
+                    flexibility it will give. </para>
+            </tip>
+        </sect3>
+    </sect2>
+    <?hard-pagebreak?>
+    <sect2>
+        <title>Typographical conventions used in this tutorial</title>
+        <para>For special elements like configuration settings, commands, screen input/output etc.
+            the convention shown in <xref xlink:href="#tbl.typographic"/> are used in this
+            tutorial.</para>
+
+        <table  xml:id="tbl.typographic">
+            <title>Typographic conventions</title>
+            <tgroup cols="2">
+                <colspec colname="c1" colnum="1" colwidth="1*"/>
+                <colspec colname="c2" colnum="2" colwidth="2.3*"/>
+                <thead>
+                    <row>
+                        <entry>Element</entry>
+                        <entry>Display</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry>
+                            <para>File name</para>
+                        </entry>
+                        <entry>
+                            <para><filename>/etc/fetchmailrc</filename></para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para>Directory name</para>
+                        </entry>
+                        <entry>
+                            <para><filename role="directory">/etc</filename></para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para>Screen input/output</para>
+                        </entry>
+                        <entry>
+                            <para>
+                                <screen>$> /etc/init.d/apache2 start</screen>
+                            </para>
+                            <para><emphasis role="italic"><emphasis role="bold">Note:</emphasis>
+                                    Screen output and listings may have additional line breaks
+                                    indicated by a '\' character at the end of the line. Such line
+                                    breaks should not be entered in the files or in the command
+                                    sequences. </emphasis></para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para>Configuration file</para>
+                        </entry>
+                        <entry>
+                            <programlisting>poll remotemail.com proto pop3 user "joe" there \ 
+with password "secret"  is "joe" here;</programlisting>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para>Commands in text</para>
+                        </entry>
+                        <entry>
+                            <para>Execute <command>fetchmail</command> once ...</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para>Acronyms in text</para>
+                        </entry>
+                        <entry>
+                            <para>The well known <acronym>openssl</acronym> library which supports
+                                    <acronym>SSL/TLS</acronym> ...</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para>Literal names in text</para>
+                        </entry>
+                        <entry>
+                            <para>The <literal>antispam 501</literal> line is used ...</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para>Application name</para>
+                        </entry>
+                        <entry>
+                            <para>The <application>Roundcube</application> mailer ...</para>
+                        </entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        <para>In some cases the same name is used as either a command or as the name of an
+            application. The context will determine if the name is used as a noun (name of
+            application) or as verb (command).</para>
+        <para>The choice of formatting should also work well for the ~8% of the general population
+            that suffer from color vision perception challenge (aka "color blindness") due to the
+            use of both color and font change. </para>
+    </sect2>
+    <sect2>
+        <title>About this document</title>
+        <para>This tutorial was written in plain text format (<acronym>UTF-8</acronym> encoding)
+            using the <emphasis role="bold">DocBook XML markup</emphasis>. To render the styled
+            output from the XML sources the <emphasis role="bold">DocBook 1.77.1 XSL</emphasis>
+            stylesheets was used together with the <command>xsltproc</command>
+            <acronym>XSLT</acronym> processor</para>
+        <para>To produce the <acronym>PDF</acronym> output the<emphasis role="bold"> DocBook
+                XML</emphasis> were first transformed into an <acronym>FO</acronym> format which was
+            then rendered with the Apache <acronym>FOP</acronym> processor into the final
+                <acronym>PDF</acronym> format. In order to get the current look and feel of the
+            document a customized <acronym>XSL</acronym> stylesheet was used. To style the
+                <acronym>HTML</acronym> output both a custom <acronym>HTML</acronym>
+            <acronym>XSL</acronym> stylesheet and a <acronym>CSS</acronym> stylesheet was
+            used.</para>
+        <para>As source editor <application>oXygen XML editor</application> was used and the
+            transform process into <acronym>HTML</acronym> and <acronym>PDF</acronym> was controlled
+            by a <application>Phing</application> script.</para>
+        <sect3>
+            <title>References for technologies used to produce this document</title>
+            <itemizedlist>
+                <listitem>
+                    <para><uri xlink:href="http://docbook.org/">DocBook</uri>, is a defined
+                            <acronym>XML</acronym> schema that identifies the meaning of different
+                        parts of a document. It is specifically well suited to write technical
+                        computer related documents but can also be used to write generic documents.
+                        By itself DocBook does not care about how the document is displayed (in
+                        contrast to for example OpenOffice or Word). </para>
+                    <para>In order to transform the DocBook <acronym>XML</acronym> document into
+                        something suitable for human reading (such as <acronym>HTML</acronym> and
+                            <acronym>PDF</acronym>) a set of <acronym>XSL</acronym> stylesheets are
+                        used. They are known as the <acronym>DocBook XSL</acronym> stylesheets. The
+                        current version as of this writing was 1.77.1</para>
+                </listitem>
+                <listitem>
+                    <para><uri xlink:href="http://www.w3.org/Style/XSL/">XSL</uri>, stands for
+                            <termdef>Extensible Stylesheet Language Family</termdef> is an overall
+                        term for three technologies used to process XML documents into other XML
+                        documents. The included technologies are:</para>
+                    <itemizedlist>
+                        <listitem>
+                            <para><uri xlink:href="http://www.w3.org/TR/xslt">XSLT</uri>, is a
+                                programming language for transforming <acronym>XML</acronym>
+                                documents into other well formed <acronym>XML</acronym> document,
+                                for example <acronym>(X)HTML </acronym>documents.</para>
+                        </listitem>
+                        <listitem>
+                            <para><uri xlink:href="http://www.w3.org/TR/xpath/">XPath</uri>, a way
+                                to uniquely identify different parts of a well formed
+                                    <acronym>XML</acronym> document. This is used as the search
+                                language in the stylesheet to specify what elements to
+                                transform.</para>
+                        </listitem>
+                        <listitem>
+                            <para><uri xlink:href="http://www.w3.org/TR/xsl/">XSL-FO</uri>, is a
+                                defined <acronym>XML</acronym> schema that defines how a printed
+                                output should be displayed. This format can later be easily
+                                transformed into other formats suitable for printed output such as
+                                PDF or RTF.</para>
+                        </listitem>
+                    </itemizedlist>
+                </listitem>
+                <listitem>
+                    <para><uri xlink:href="http://xmlsoft.org/XSLT/xsltproc2.html">xsltproc</uri>,
+                        is the GNOME projects <acronym>XSLT</acronym> processor that uses an
+                            <acronym>XSL(T)</acronym> program to transform one
+                            <acronym>XML</acronym> document into another. This is one of the few
+                            <acronym>XSLT</acronym> processors written in C (most others are written
+                        in Java, for example <application>Saxon</application>)</para>
+                </listitem>
+                <listitem>
+                    <para><uri xlink:href="http://xmlgraphics.apache.org/fop/">fop</uri>, is the
+                        Apache projects <acronym>XSL-FO</acronym> processor. This is primarily used
+                        to transform a <acronym>XSL-FO</acronym> document into a
+                            <acronym>PDF</acronym> document.</para>
+                </listitem>
+                <listitem>
+                    <para><uri xlink:href="http://www.oxygenxml.com/">Oxygen</uri>, the
+                            <acronym>XML</acronym> editor used to for writing the source
+                            <acronym>XML</acronym> document. Any text editor can of course be used
+                        to write <acronym>XML</acronym> but this editor has a lot of intelligence as
+                        well as a preview mode that lets you wotk with an approximation of how a
+                        typical HTML rendered version of the <acronym>XML</acronym> document will
+                        look which makes it much quicker to produce this type of XML
+                        documents.</para>
+                </listitem>
+            </itemizedlist>
+        </sect3>
+    </sect2>    
+</sect1>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>A.4 Example 4</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49624624"/>A.4 Example 4</h1></div></div></div>
+        
+        <p>This setup requires password authentication from both local and remote users but only
+            require <acronym class="acronym">SSL/TLS</acronym> from remote users</p>
+        <pre class="programlisting">#being strict on mynetworks isn't important for this setup, but:
+mynetworks_style = host
+
+# sasl
+smtpd_sasl_auth_enable = yes
+
+# tls
+#
+smtpd_tls_security_level = may
+smtpd_tls_loglevel = 1
+smtpd_tls_cert_file = &lt;/path/to/crt.crt&gt;
+smtpd_tls_key_file = &lt;/path/to/key.key&gt;
+smtpd_tls_session_cache_database = 
+  btree:/var/lib/postfix/smtpd_tls_scache
+
+smtpd_recipient_restrictions = 
+  #allow anyone delivering mail to this host:
+  permit_auth_destination
+  #otherwise, allow authenticated connections from localhost
+  check_client_access hash:/usr/local/etc/postfix/access_client
+  #otherwise, demand both authentication and encryption:
+  reject_plaintext_session
+  permit_sasl_authenticated
+  reject</pre>
+        <p><code class="filename">/usr/local/etc/postfix/access_client</code> should look like
+            this:</p>
+        <pre class="programlisting"># connections from 127.x.x.x must authenticate
+127  permit_sasl_authenticated, reject</pre>
+    </div></body></html>

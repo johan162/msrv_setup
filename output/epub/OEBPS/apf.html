@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>Appendix F - Apache virtual host example configuration</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="appendix"><div class="titlepage"><div><div><h1 class="title"><a id="appendix.apache"/>Appendix F - Apache virtual host example configuration</h1></div></div></div>
+    
+    <p>The following example configuration shows a complete virtual host configuration for a
+            <acronym class="acronym">HTTPS</acronym> server. The configuration assumes that the host is at IP
+        address <code class="literal">192.168.0.50</code>. You should also notice that this setup relaxes the
+        overly restrictive default settings to allow symbolic links and <acronym class="acronym">CGI</acronym>
+        programs to be executed.</p>
+    <p>Remember also that in addition to the virtual host configuration file the <code class="filename">/etc/sysconfig/apache2</code> configuration also needs to be
+        updated as described in a previous chapter to allow <acronym class="acronym">HTTPS</acronym> traffic.</p>
+    <div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49905312"/>F.1 ssl-vhost.conf</h1></div></div></div>
+        
+        <p>The following shows an example of a complete virtual host configuration </p>
+        <div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3>
+            <p>The initial <code class="literal">&lt;VirtualHost _default_:443&gt;</code> will make these
+                settings apply on <span class="italic">all IP addresses that no other virtual
+                    host is bound to</span>. Please observe that this is quite different from
+                <code class="literal">&lt;VirtualHost *:443&gt;</code> which will match <span class="italic">all IP addresses regardless if they are used</span> by other
+                virtual host or not.</p>
+            <p>The matching is valid only for numeric IP add not DNS names.</p>
+        </div>
+        <pre class="programlisting">&lt;VirtualHost _default_:443&gt;
+
+        #  General setup for the virtual host
+        DocumentRoot "/srv/www/vhosts/ssl-htdocs"
+        ServerName 192.168.0.50:443
+        ServerAdmin root@localhost
+        ErrorLog /var/log/apache2/ssl-htdocs.err
+        TransferLog /var/log/apache2/ssl-htdocs.access
+        CustomLog /var/log/apache2/ssl-htdocs.info   ssl_combined
+
+        DirectoryIndex index.html
+
+        RewriteEngine On                                                                     
+        RewriteOptions Inherit                                                               
+                                                                                             
+        HostnameLookups Off                                                                  
+        UseCanonicalName Off                                                                 
+                                                                                             
+        ServerSignature On                                                                   
+                                                                                             
+        Include /etc/apache2/conf.d/*.conf                                                   
+                                                                                             
+        &lt;Directory /srv/www/vhosts/ssl-htdocs&gt;                                               
+          AllowOverride All                                                                  
+          Options Indexes FollowSymLinks ExecCGI                                             
+          Order allow,deny                                                                   
+          Allow from all                                                                     
+        &lt;/Directory&gt;                                                                         
+
+        ScriptAlias /cgi-bin/ /srv/www/vhosts/ssl-cgi-bin
+        &lt;Directory /srv/www/vhosts/ssl-cgi-bin&gt;
+          AllowOverride All
+          Options +ExecCGI -Includes
+          Order allow,deny
+          Allow from all
+        &lt;/Directory&gt;
+
+        SSLCertificateFile /etc/apache2/ssl.crt/server.crt
+        SSLCertificateKeyFile /etc/apache2/ssl.key/server.key
+        SSLEngine on
+        SSLProtocol all -SSLv2 -SSLv3
+        SSLCipherSuite ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!MD5:@STRENGTH
+
+        &lt;Files ~ "\.(cgi|shtml|phtml|php3?)$"&gt;
+            SSLOptions +StdEnvVars
+        &lt;/Files&gt;
+        &lt;Directory "/srv/www/cgi-bin"&gt;
+            SSLOptions +StdEnvVars
+        &lt;/Directory&gt;
+
+        SetEnvIf User-Agent ".*MSIE [1-5].*" \
+                 nokeepalive ssl-unclean-shutdown \
+                 downgrade-1.0 force-response-1.0
+                 
+&lt;/VirtualHost&gt; </pre>
+        
+    </div>
+</div></body></html>

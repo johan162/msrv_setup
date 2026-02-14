@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<appendix 
+    xmlns="http://docbook.org/ns/docbook" 
+    revision="$Id: appendix02-procmail.xml 45 2012-01-16 23:27:57Z ljp $"
+    xmlns:xlink="http://www.w3.org/1999/xlink" 
+    version="5.0" 
+    xml:id="appendix.procmail">
+    <title>Procmail recipes</title>
+    <para>The first line of a procmail filter always starts with “:0” and the remaining letters
+        controls the filtering process. </para>
+    <para>For example “h” will only filter on the mail headers, “c” will make a copy of the mail so
+        that it is available to filters after the current filter. If there is no “c” then the filter
+        will consume the mail and processing stops here and no more filters will be applied to the
+        mail.</para>
+    <para>Five good sites to find out more about how to write procmail recipes are:</para>
+    <itemizedlist>
+        <listitem>
+            <para><uri>http://pm-doc.sourceforge.net/doc/</uri> (The official procmail
+                documentation)</para>
+        </listitem>
+        <listitem>
+            <para><uri>http://partmaps.org/era/procmail/mini-faq.html</uri> (Procmail FAQ)</para>
+        </listitem>
+        <listitem>
+            <para><uri>http://www.ii.com/internet/robots/procmail/qs/</uri></para>
+        </listitem>
+        <listitem>
+            <para><uri>http://userpages.umbc.edu/~ian/procmail.html</uri></para>
+        </listitem>
+        <listitem>
+            <para><uri>http://lipas.uwasa.fi/~ts/info/proctips.html</uri></para>
+        </listitem>
+    </itemizedlist>
+    <sect1>
+        <title> The problem of filtering on the “Subject:” field</title>
+        <para>While at first it might seem simple enough to filter out certain mails with a specific
+            subject either as spam or some other reason it is in practice a lot more complicated.
+            The problem is that the subject does not always have to be in plain text. Instead it is
+            very common to have the subject in either quoted printable or in base64. Such an encoded
+            string looks like =?charset?format?encoded text?= (this format is more specifically
+            described in RFC1522) and it can also be followed by some text in plain format and then
+            again by some encoded text. For obvious reason a lot of spam uses this format to make it
+            much more difficult to do simple text matching.</para>
+        <para>Unfortunately there is no easy way around this and procmail does not have any built in
+            “decoding” functionality so this has to be done manually.</para>
+        <para>To help with this the following small perl script can be used as a helper script. This
+            script has been floated on the net and the author is unfortunately unknown to me (if you
+            know please let me now and the proper credit will be given)</para>
+        <programlisting>#!/usr/bin/perl
+#
+# Perl script to decode a subject string possible encoded with RFC1522 
+# quoted printable or base64 encoding.
+# Author: Unknown.
+
+while (&lt;>) {
+  chomp;
+  s/^[ \t]//;
+  foreach (split(/(=[?].*?[?][BQ][?].*?[?]=)/i)) {
+    if (($charset, $encoding, $txt) = /=[?](.*?)[?]([bq])[?](.*?)[?]=/i) {
+      $encoding =~ tr/[BQ]/[bq]/;
+      open PIPE, "echo '$txt' | mimencode -u -$encoding |";
+      $_ = &lt;PIPE>;
+      close PIPE;
+      chomp;
+      }
+    print $_;
+  }
+  }</programlisting>
+        <para>Store this script a file and make the file executable (in the example below we will
+            assume it is stored in /usr/bin/decode_subjheader ) In procmail we can then use formmail
+            to first extract the subject header and then run that header through this perl script to
+            get the decoded subject</para>
+        <para>For example the helper script can be used as:</para>
+        <programlisting>SUBJECT = `formail -xSubject: | /usr/bin/decode_subjheader`
+:0
+* SUBJECT ?? (Newsletter.*)
+$NEWSLETTER</programlisting>
+        <para>The recipe above will first extract the subject header from the mail and run it
+            through our decoder perl script and then store the decoded header in the variable
+            SUBJECT. </para>
+        <para>The details of the filtering rules are explained in Table <xref
+                xlink:href="#tbl.procmail-filt-details"/></para>
+        <table frame="topbot" xml:id="tbl.procmail-filt-details">
+            <title>Explanation of filtering rules</title>
+            <tgroup cols="2">
+                <colspec colname="c1" colnum="1" colwidth="1*"/>
+                <colspec colname="c2" colnum="2" colwidth="2.56*"/>
+                <tbody>
+                    <row>
+                        <entry>
+                            <para><code>:0</code></para>
+                        </entry>
+                        <entry>
+                            <para>Begin a new rule</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para><code>*</code></para>
+                        </entry>
+                        <entry>
+                            <para>Begin a new condition</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para><code>SUBJECT ??</code></para>
+                        </entry>
+                        <entry>
+                            <para>Match the variable SUBJECT to</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para><code>(Newsletter.*)</code></para>
+                        </entry>
+                        <entry>
+                            <para>… any subject line starting with “Newsletter”</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para><code>$NEWSLETTER</code></para>
+                        </entry>
+                        <entry>
+                            <para>If the filter matches then store it in the folder pointed to by
+                                the content of the variable</para>
+                        </entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+    </sect1>
+    <sect1>
+        <title>How to create filter that matches on any of several rules (creating an “OR”
+            rule)</title>
+        <para>By default all matching rules in a filter need to apply before the action is taken. To
+            create a rule which simulates an “OR” condition for the matching expression one has to
+            make use of the “else” rule. This is done by executing an empty action “{ }” when all
+            the conditions do NOT match and our “real” actions if this condition is not true. (This
+            uses the fact that NOT( (NOT A) AND (NOT B)) = A OR B )</para>
+        <programlisting>:0 hb
+* !&lt;expression 1>
+* !&lt;expression 2>
+{ }
+
+:0 E
+&lt;action to be taken></programlisting>
+        <para><emphasis role="italic">Please note that there should be one space in the “{ }” empty
+                statement!</emphasis>
+        </para>
+        <para>So for example to store mail that comes from either ´"<email>joe.r@gmail.com</email>"
+            or “<email>helen.q@gmail.com</email>” in a folder called “Friends” the following recipe
+            could be used</para>
+        <programlisting>0: hb
+* !^From:.*joe.r@gmail.com
+* !^From:.*Helen.q@gmail.com
+{ }
+
+:0 e
+$FRIENDS</programlisting>
+    </sect1>
+    <sect1>
+        <title>Out of office</title>
+        <para>The following receipe shows how to send an automatic answer to incoming messages. Fro
+            this we use the utility program "formmail". We also take some precaution to avoid an
+            infinite loop when the sender also have an automatic reply to avoid mails just bouncing
+            back and forth.</para>
+        <programlisting>#--------------------------------------------------------------------------
+# Out of office
+#--------------------------------------------------------------------------
+:0 h c
+* !^FROM_DAEMON
+* !^FROM_MAILER
+* !^X-Loop: out_of_office
+| (/usr/bin/formail -r -A"Precedence: junk (autoreply)" -A"X-Loop: out_of_office" \
+-I"Subject: Out of office reply"; cat $HOME/out_of_office.txt) | $SENDMAIL -t</programlisting>
+    </sect1>
+    <sect1>
+        <title>Replying with a mail based on subject</title>
+        <para>This shows how to use formmail to perform an action based on the subject of an
+            incoming mail. In this particular case we respond to a specific mail by powering on a
+            remote server</para>
+        <programlisting>#---------------------------------------------------------------------------
+# Sending a reply based on subject
+#---------------------------------------------------------------------------
+:0 h c
+* ^Subject: gwake
+| (/usr/bin/formail -r -I"Subject: Server gamma waking up (autoreply)" ; \
+echo "This is not a guarant\
+ee that the server has woken up though. " ) | $SENDMAIL -t</programlisting>
+    </sect1>
+    <sect1>
+        <title>Calling an arbitrary external program</title>
+        <para>This shows a simple variant of calling an external program based on the subject in a
+            mail</para>
+        <programlisting>#-----------------------------------------------------------------------------
+# Start up gamma server
+#-----------------------------------------------------------------------------
+:0
+* ^Subject: Send information
+| /usr/bin/the program</programlisting>
+    </sect1>
+    <sect1>
+        <title>A template to start with</title>
+        <para>The final example is not really an example but a template that you may use to get a
+            good start in writing your own rules. It give a logical structure and establishes some
+            "best practices" to get readable and understandable procmail files (as far as that is
+            possible). This template will give you</para>
+        <itemizedlist>
+            <listitem>
+                <para>A logfile under /tmp for each month</para>
+            </listitem>
+            <listitem>
+                <para>Spamfiltering based on spamassassin with both filtering to a "Spam" folder and
+                    also direct deletion of mails with a high spam score (>=15)</para>
+            </listitem>
+            <listitem>
+                <para>A good practice of giving symbolic names to the mail folders where to store
+                    mail</para>
+            </listitem>
+        </itemizedlist>
+        <programlisting>#---------------------------------------------
+# Standard setup for extra logging
+#---------------------------------------------
+VERBOSE=on
+LOGABSTRACT=all
+LOGFILE=/tmp/procmail-${LOGNAME}-`date +%Y%m`.log
+ 
+#---------------------------------------------
+# Some standard paths
+#---------------------------------------------
+MAILDIR=/srv/mail/${LOGNAME}
+DEFAULT=${MAILDIR}/
+INBOX=${MAILDIR}/
+ 
+#---------------------------------------------
+# Subfolders to store mails in. You should add
+# a variable for each folder you are using in your
+# mail setup. The wasiest way to create the proper
+# folders is to do it via you email client,
+# REMEMBER TO PUT TRAILING '/' AT THE END 
+# to mark that the folders are in maildir format.
+#---------------------------------------------
+SPAM=${MAILDIR}/.Junk/
+NEWSLETTERS=${MAILDIR}/.newsletters/
+ 
+##--------------------------------------------
+## End of setup. Now comes all the filer 
+## rules.
+##--------------------------------------------
+ 
+#---------------------------------------------
+# FILTER all Newsletters.
+#---------------------------------------------
+:0
+^Subject:.*Newsletter
+^From:.*news.com
+{ }
+:0 E
+$NEWSLETTERS
+ 
+#---------------------------------------------
+# FILTER for spamassassin. Only run mails smaller than ½ MB 
+# through spamassassin
+#---------------------------------------------
+:0
+* &lt; 512000
+| /usr/bin/spamc
+ 
+#---------------------------------------------
+# Delete all spams with score >= 15 
+#---------------------------------------------
+:0
+* !^X-Spam-Level: \*\*\*\*\*\*\*\*\*\*\*\*\*\*\*.*
+* !^X-Spam-Status: Yes, score=1[5-9]\.[0-9]
+* !^X-Spam-Status: Yes, score=[2-9][0-9]\.[0-9]
+{ }
+:0 E
+/dev/null
+ 
+#---------------------------------------------
+# Put all remaining identified spams in Junk folder.
+# NOTE: This assumes spamassassin is configured to 
+# set the X-Spam-Flag: YES for identified spams.
+#---------------------------------------------
+:0
+* ^X-Spam-Flag: YES
+$SPAM
+ 
+#---------------------------------------------
+# Store the reaming mails to the inbox
+#---------------------------------------------
+:0
+$DEFAULT</programlisting>
+    </sect1>
+</appendix>

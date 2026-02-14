@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?hard-pagebreak?>
+<sect1 xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
+    version="5.0"  revision="$Id: section10.xml 50 2012-01-25 01:54:48Z ljp $">
+    <title>Setting up Roundcube</title>
+    <para><emphasis role="italic">(<emphasis role="bold">Note:</emphasis> The following section
+            assumes that roundcube v0.7 and <application>MySQL</application> community server have
+            been installed, see <xref xlink:href="#section.prereq"/>)</emphasis>
+    </para>
+    <para>We have finally come to the part that users will see; the Web-based mail client. To setup
+            <application>Roundcube</application> do the following steps:</para>
+    <orderedlist>
+        <listitem>
+            <para>Download <application>Roundcube</application> from
+                    <uri>http://roundcube.net/</uri></para>
+        </listitem>
+        <listitem>
+            <para>Extract the sources to your <acronym>SSL</acronym> enabled http document root. We also recommend to
+                change the main directory name for Roundcube to something more generic, say
+                "webmail". Using the structure suggested previously in this document this would then
+                be ‘<filename>/srv/www/ssl-htdocs/webmail</filename>’ and will make it possible to
+                access your mail in a natural way as "<uri>https://localhost/webmail/</uri>"</para>
+            <para>
+                <tip>
+                    <para>One alternative way of placing <application>Roundcube</application>
+                        sources is outside the document root, say
+                            “<filename>/usr/local/share</filename>”. Then we create an
+                            <application>Apache</application> alias to that directory. This means
+                        that if the user accesses (for example) “/webmail”
+                            <application>Apache</application> knows that it should actually fetch
+                        the content from the directory “<filename role="directory"
+                            >/usr/local/share/roundcube</filename>” assuming we have setup our
+                        aliases in that way. Please refer to the <application>Apache</application>
+                        documentation for more details on the <literal>alias</literal> command. This
+                        is a good practice to avoid installing Web-applications directly in the
+                        document root.</para>
+                </tip>
+            </para>
+        </listitem>
+        <listitem>
+            <para>Make sure that the Web-server can write to ‘temp’ and ‘logs’ directories within
+                the extracted files in the document root by executing the following command as
+                root</para>
+            <para>
+                <screen>$> chown -R wwwrun:www temp logs</screen>
+            </para>
+        </listitem>
+        <listitem>
+            <para>Setup the <application>MySQL</application> user and database that roundcube should
+                use as follows (this assumes that you previously have installed
+                    <application>MySQL</application> and have set a password for the
+                    <literal>root</literal> user.)</para>
+            <screen>$> mysql –h localhost –u root -p
+CREATE DATABASE roundcubemail;
+GRANT ALL PRIVILEGES ON roundcubemail.* TO roundcube@localhost \
+IDENTIFIED BY 'roundcube';
+FLUSH PRIVILEGES;</screen>
+            <para><emphasis role="bold">Note:</emphasis> You can change the user and password to
+                something better but since the database is only accessible from localhost it is
+                still quite secure.</para>
+        </listitem>        
+        <listitem>
+            <para>Point your browser to the installer directory
+                    <code>https://webmail/installer/</code></para>
+            <para>The installation is a three step process. The first step is a verification that
+                the <acronym>PHP5</acronym> installation has all necessary modules installed. Verify
+                that all the necessary prerequisites are fulfilled. </para>
+            <para>In the next step the details of the database, the <acronym>IMAP</acronym> and
+                    <acronym>SMTP</acronym> settings must be given. Below are some examples on how
+                this can be specified (change user and passwords according to your settings)</para>
+  
+                <table>
+                    <title>Roundcube <application>MySQL</application> settings</title>
+                    <tgroup cols="2">
+                    <colspec colname="c1" colnum="1" colwidth="1*"/>
+                    <colspec colname="c2" colnum="2" colwidth="2*"/>
+                        <thead>
+                            <row>
+                                <entry>Field</entry>
+                                <entry>Value</entry>
+                            </row>
+                        </thead>
+                    <tbody>
+                        <row>
+                            <entry>
+                                <para><code>Database server</code></para>
+                            </entry>
+                            <entry>
+                                <para><uri>localhost</uri></para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para><code>Database name</code></para>
+                            </entry>
+                            <entry>
+                                <para><code>roundcube</code></para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para><code>Database user name</code></para>
+                            </entry>
+                            <entry>
+                                <para><code>roundcube</code></para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para><code>Database password</code></para>
+                            </entry>
+                            <entry>
+                                <para><code>roundcube</code></para>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+                </table>                
+            
+
+                <table>
+                    <title>Roundcube <acronym>IMAP</acronym> settings</title>
+                    <tgroup cols="2">
+                        <colspec colname="c1" colnum="1" colwidth="1*"/>
+                        <colspec colname="c2" colnum="2" colwidth="2*"/>
+                        <thead>
+                            <row>
+                                <entry>Field</entry>
+                                <entry>Value</entry>
+                            </row>
+                        </thead>
+                    <tbody>
+                        <row>
+                            <entry>
+                                <para><code>default_host</code></para>
+                            </entry>
+                            <entry>
+                                <para><uri>ssl://localhost</uri></para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para><code>default_port</code></para>
+                            </entry>
+                            <entry>
+                                <para><code>993</code></para>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+                </table>
+            
+            <para><emphasis role="italic"><emphasis role="bold">Note:</emphasis> Make sure that
+                        <code>auto_create_user</code> is marked since it will be impossible to login
+                    otherwise!</emphasis></para>
+            
+                <table>
+                <title>Roundcube <acronym>SMTP</acronym> settings</title>
+                <tgroup cols="2">
+                    <colspec colname="c1" colnum="1" colwidth="1*"/>
+                    <colspec colname="c2" colnum="2" colwidth="2*"/>
+                    <thead>
+                        <row>
+                            <entry>Field</entry>
+                            <entry>Value</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>
+                                <para><code>smtp_server</code></para>
+                            </entry>
+                            <entry>
+                                <para><uri>tls://localhost</uri></para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para><code>smtp_port</code></para>
+                            </entry>
+                            <entry>
+                                <para><code>25</code></para>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+            
+            <para><emphasis role="italic"><emphasis role="bold">Note:</emphasis> Please leave the
+                        <acronym>SMTP</acronym> username and password empty. Roundcube will then use
+                    the login information to access the <acronym>SMTP</acronym>
+                user.</emphasis></para>
+            <para>In the next step the installer will show the two configuration files
+                    <filename>"main.inc.php</filename>" and "<filename>db.inc.php</filename>".
+                Download them and store them in the <filename>config</filename> directory.</para>            
+            <para>The final step in the setup is a test to make sure that the settings are correct.
+                Make sure that <emphasis role="bold">all</emphasis> these tests succeeds before
+                proceeding! </para>
+
+        </listitem>
+        <listitem>
+            <para>It should now be possible to point your browser to the directory where you have
+                installed Roundcube (<uri>https://localhost/webmail/</uri>) and see the interface.
+                After making sure that this works the installer directory should be removed.</para>
+        </listitem>        
+    </orderedlist> 
+</sect1>

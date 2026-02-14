@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<appendix xmlns="http://docbook.org/ns/docbook"
+    revision="$Id: appendix06-apache.xml 39 2012-01-14 19:40:38Z ljp $"
+    xmlns:xlink="http://www.w3.org/1999/xlink" version="5.0" xml:id="appendix.apache">
+    <title>Apache virtual host example configuration</title>
+    <para>The following example configuration shows a complete virtual host configuration for a
+            <acronym>HTTPS</acronym> server. The configuration assumes that the host is at IP
+        address <literal>192.168.0.50</literal>. You should also notice that this setup relaxes the
+        overly restrictive default settings to allow symbolic links and <acronym>CGI</acronym>
+        programs to be executed.</para>
+    <para>Remember also that in addition to the virtual host configuration file the <filename
+            role="directory">/etc/sysconfig/apache2</filename> configuration also needs to be
+        updated as described in a previous chapter to allow <acronym>HTTPS</acronym> traffic.</para>
+    <sect1>
+        <title>ssl-vhost.conf</title>
+        <para>The following shows an example of a complete virtual host configuration </para>
+        <note>
+            <para>The initial <literal>&lt;VirtualHost _default_:443></literal> will make these
+                settings apply on <emphasis role="italic">all IP addresses that no other virtual
+                    host is bound to</emphasis>. Please observe that this is quite different from
+                <literal>&lt;VirtualHost *:443></literal> which will match <emphasis
+                    role="italic">all IP addresses regardless if they are used</emphasis> by other
+                virtual host or not.</para>
+            <para>The matching is valid only for numeric IP add not DNS names.</para>
+        </note>
+        <programlisting>&lt;VirtualHost _default_:443>
+
+        #  General setup for the virtual host
+        DocumentRoot "/srv/www/vhosts/ssl-htdocs"
+        ServerName 192.168.0.50:443
+        ServerAdmin root@localhost
+        ErrorLog /var/log/apache2/ssl-htdocs.err
+        TransferLog /var/log/apache2/ssl-htdocs.access
+        CustomLog /var/log/apache2/ssl-htdocs.info   ssl_combined
+
+        DirectoryIndex index.html
+
+        RewriteEngine On                                                                     
+        RewriteOptions Inherit                                                               
+                                                                                             
+        HostnameLookups Off                                                                  
+        UseCanonicalName Off                                                                 
+                                                                                             
+        ServerSignature On                                                                   
+                                                                                             
+        Include /etc/apache2/conf.d/*.conf                                                   
+                                                                                             
+        &lt;Directory /srv/www/vhosts/ssl-htdocs>                                               
+          AllowOverride All                                                                  
+          Options Indexes FollowSymLinks ExecCGI                                             
+          Order allow,deny                                                                   
+          Allow from all                                                                     
+        &lt;/Directory>                                                                         
+
+        ScriptAlias /cgi-bin/ /srv/www/vhosts/ssl-cgi-bin
+        &lt;Directory /srv/www/vhosts/ssl-cgi-bin>
+          AllowOverride All
+          Options +ExecCGI -Includes
+          Order allow,deny
+          Allow from all
+        &lt;/Directory>
+
+        SSLCertificateFile /etc/apache2/ssl.crt/server.crt
+        SSLCertificateKeyFile /etc/apache2/ssl.key/server.key
+        SSLEngine on
+        SSLProtocol all -SSLv2 -SSLv3
+        SSLCipherSuite ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!MD5:@STRENGTH
+
+        &lt;Files ~ "\.(cgi|shtml|phtml|php3?)$">
+            SSLOptions +StdEnvVars
+        &lt;/Files>
+        &lt;Directory "/srv/www/cgi-bin">
+            SSLOptions +StdEnvVars
+        &lt;/Directory>
+
+        SetEnvIf User-Agent ".*MSIE [1-5].*" \
+                 nokeepalive ssl-unclean-shutdown \
+                 downgrade-1.0 force-response-1.0
+                 
+&lt;/VirtualHost> </programlisting>
+        
+    </sect1>
+</appendix>

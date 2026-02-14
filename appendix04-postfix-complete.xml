@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<appendix xmlns="http://docbook.org/ns/docbook"
+    revision="$Id: appendix04-postfix-complete.xml 27 2012-01-04 09:12:36Z ljp $"
+    xmlns:xlink="http://www.w3.org/1999/xlink" version="5.0" xml:id="appendix.postfix">
+    <title>Postfix configuration</title>
+    <para>Below is a complete postfix configuration file. It will setup a mailserver that:</para>
+    <itemizedlist>
+        <listitem>
+            <para>Assumes the presence of Dovecot for authentication of incoming SMTP
+                connections</para>
+        </listitem>
+        <listitem>
+            <para>Will relay non-local mail to our ISPs mailserver</para>
+        </listitem>
+        <listitem>
+            <para>Will replace the local user names with proper mail addresses at our ISP</para>
+        </listitem>
+        <listitem>
+            <para>Will allow clients to connect using <acronym>SSL/TLS</acronym> but will not require it</para>
+        </listitem>
+        <listitem>
+            <para>Will listen on all interfaces</para>
+        </listitem>
+        <listitem>
+            <para>Unknown local users will be rejected</para>
+        </listitem>
+    </itemizedlist>
+    <para>Keep in mind that this is a minimal (but working) configuration file and that there are
+        many more parameters that can be adjusted. All parameters that has not been explicitly
+        defined in this file will take on there default values.</para>
+    <sect1>
+        <title>main.cf</title>
+        <programlisting linenumbering="numbered"><xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="src/main.cf" parse="text"/></programlisting>
+    </sect1>
+    <sect1>
+        <title>master.cf</title>
+        <para>For a setup that uses port 25 both to received encrypted and non-encrypted
+            communication it is enough to just uncomment the following line in the default master.cf </para>
+        <programlisting>tlsmgr    unix  -       -       n       1000?   1       tlsmgr</programlisting>
+        <para>To enable either the submission port (587) or the (obsoleted) SMTPS port (465) it is
+            necesary to adjust <filename>master.cf</filename> so that <acronym>SMTPD</acronym> listens on that
+            port.</para>
+    </sect1>
+</appendix>

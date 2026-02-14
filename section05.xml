@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?hard-pagebreak?>
+<sect1 xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
+    version="5.0" revision="$Id: section05.xml 56 2012-07-23 19:38:49Z ljp $"
+     xml:id="chap.dovecot">
+    <title>Setting up Dovecot</title>
+    <para>The reason to start with <application>Dovecot</application> rather than
+            <application>Postfix</application> is twofold. One is that postfix will make use of the
+        Dovecot <acronym>SSL/TLS</acronym> certificates (as shown in <xref
+            xlink:href="#fig.cert-hierarchy"/>) and the second is that postfix will use Dovecot
+            <acronym>SASL</acronym> service to authenticate incoming <acronym>SMTP</acronym>
+        requests. <acronym>SASL</acronym> stands for <emphasis role="bold">S</emphasis>imple
+            <emphasis role="bold">A</emphasis>uthentication and <emphasis role="bold"
+        >S</emphasis>ecurity <emphasis role="bold">L</emphasis>ayer and is a standardized protocol
+        to handle authentication. The reason for this is that we want incoming
+            <acronym>SMTP</acronym> traffic to be authenticated forcing users to log in before being
+        able to send mails through our <acronym>SMTP</acronym>(s) server. Since postfix does not
+        provide any authentication service by itself it must make use of some service provided by
+        another component, Dovecot in this case.</para>
+    <para>The reason for re-using the <acronym>SSL/TLS</acronym> certificates from Dovecot in postfix is partly
+        laziness; Dovecot comes with a small script that makes the creation of certificates very
+        easy.  </para>
+    <para>
+        <tip>
+            <para>We also remind of the more complete description on how to use
+                    <acronym>openssl</acronym> directly in . to create a certificate hierarchy with
+                a bit more control that comes from better understanding. But for now we make use of
+                the utility script that comes with <application>Doevcot2</application> since it is
+                the easier way for a newcomer to do what needs to be done.</para>
+        </tip>
+    </para>
+    <para>In the following we assume that you have installed Dovecot2 through Yast. Before continue
+        please make sure that Dovecot 2.0.x is installed and not 1.x. For some reason SuSE still
+        uses 1.x as the default version of Dovecot (instead of Dovecot2).</para>
+    <para>
+        <note>
+            <para>The script that comes with <application>Dovecot</application> does roughly the
+                same step as the previously used <command>gensslcert</command> (for Apache2) but
+                stores the resulting certificate files in a different directory and also uses the
+                    <literal>*.pem</literal> endings instead of <literal>*.crt/*.key</literal> (see
+                the section on <acronym>SSL</acronym>/<acronym>TLS</acronym> certificates for an
+                explanation of <literal>*.pem</literal> vs. <literal>*.crt/*.key</literal>
+                suffixes)</para>
+        </note>
+    </para>
+    <sect2>
+        <title> Modifying dovecot configuration files</title>
+        <para>After installing Dovecot all configuration files can be found under <filename
+                role="directory">/etc/dovecot/conf.d</filename>
+        </para>
+        <para>The files that need editing are listed in <xref xlink:href="#tbl.dovecot-conf-files"/>
+            together with a short explanation of the purpose of each file.</para>
+        <table xml:id="tbl.dovecot-conf-files">
+            <title>Dovecot configuration files that needs
+                modifying</title>
+            <tgroup cols="2">
+                <colspec colname="c1" colnum="1" colwidth="1*"/>
+                <colspec colname="c2" colnum="2" colwidth="3*"/>
+                <thead>
+                    <row>
+                        <entry>Configuration file </entry>
+                        <entry>Comment</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry>
+                            <para><filename>10-master.conf</filename></para>
+                        </entry>
+                        <entry><para>Enabling and disabling what protocols Dovecot should listen for</para></entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para><filename>10-auth.conf</filename></para>
+                        </entry>
+                        <entry><para>What methods to use for user authentication</para></entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para><filename>10-mail.conf</filename></para>
+                        </entry>
+                        <entry><para>Location for mail repositories</para></entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para><filename>10-ssl.conf</filename></para>
+                        </entry>
+                        <entry><para>Settings for encrypted communication</para></entry>
+                    </row>
+                    <row>
+                        <entry>
+                            <para><filename>10-logging.conf</filename></para>
+                        </entry>
+                        <entry><para>Settings for logging from Dovecot. Useful when debugging issues.</para></entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        <para>Strictly speaking there is no need to change the last file controlling the logging
+            levels but while setting up the server it is very handy to enable as much logging as
+            possible in order to ease any troubleshooting that may be needed if things don't quite
+            work out as we think.</para>
+        <sect3>
+            <title>10-master.conf</title>
+            <para>Here we need to enable only <acronym>IMAPS</acronym>. Make sure that the section
+                service <acronym>IMAP</acronym>-login has the following settings:</para>
+            <programlisting>service imap-login {    
+  inet_listener imaps {        
+    port = 993        
+    <acronym>SSL</acronym> = yes
+  }
+}</programlisting>
+            <para>Further down in <filename>10-master.conf</filename> the configuration for the
+                authentication socket can be found. This will later be used by postfix to check any
+                incoming logins. By default only root is allowed to read on this socket so as long
+                as postfix is run with root privileges the default permissions are fine. However
+                normally postfix is run as a separate user for safety so these permission needs to
+                be relaxed as shown below.</para>
+            <programlisting>service auth {
+  unix_listener /var/spool/postfix/private/auth {
+    mode = 0660
+    user = postfix        
+    group = postfix  
+  }
+}</programlisting>
+        </sect3>
+        <sect3>
+            <title>10-auth.conf</title>
+            <para>In this file we must allow plaintext login. This is safe since we are running over
+                a secure <acronym>SSL</acronym> encrypted link.</para>
+            <para>Find the following settings and adjust them as shown</para>
+            <programlisting>disable_plaintext = no
+auth_mechanisms = plain</programlisting>
+            <para> The above settings will allow a plain text username/password type of login to
+                dovecot.</para>
+            <para>
+                <note>
+                    <para>Some <emphasis role="bold">HowTo</emphasis>:s seem to indicate the use of
+                            <literal>LOGIN</literal> as the authentication mechanism for
+                            <acronym>SASL</acronym>. However, <literal>LOGIN</literal> is a
+                        deprecated mechanism and PLAIN is the recommended way as described in RFC
+                        2595.</para>
+                </note>
+            </para>
+            <para>For the actual check of username/password Dovecot will make use of the
+                    <acronym>PAM</acronym> system on Linux which in turn will check any
+                username/password against the Linux standard system users and password files (e.g.
+                    <filename>/etc/passwd</filename> or the shadow version of the password
+                file)</para>
+        </sect3>
+        <sect3>
+            <title>10-mail.conf</title>
+            <para>The primary purpose of this file is to tell dovecot where in the file system mails
+                are stored. The choice here is system dependent and up to the administrator. In the
+                examples shown below mails are stored in <filename>/srv/mail/%u</filename> where
+                    <literal>%u</literal> is replaced by dovecot for the name of the user. </para>
+            <para>As for mail format we strongly recommend to use the maildir format where each mail
+                is stored in its own file. To instruct dovecot to use this format we specify the
+                mail location with a prefix of <literal>maildir</literal> as shown next. Now find
+                and adjust the following setting</para>
+            <programlisting>mail_location = maildir:/srv/mail/%u</programlisting>
+            <para>We must also create this directory. Assuming we have a user called
+                    <literal>tstuser</literal> belonging to the user group <literal>users</literal>
+                we can now create this mail directory with the proper ownership with the following
+                commands:</para>
+            <screen>$> sudo mkdir –p /srv/mail/tstuser
+$> sudo chown tstuser:users /srv/mail/tstuser
+$> sudo chmod 700 /srv/mail/tstuser</screen>
+            <para>The above lines will create a mail directory only accessible by root and the
+                specified user. The above steps are needed once for each mail user. In the above we
+                have, somewhat arbitrary, chosen to store each users mail under the
+                    <filename>/srv/mail</filename> directory.</para>
+            <para>
+                <tip>
+                    <para>Another common setup is to store all the mails inside each users home
+                        directory, for example in <filename>~/Maildir</filename></para>
+                </tip>
+            </para>
+        </sect3>
+        <sect3>
+            <title>10-ssl.conf</title>
+            <para>Here we need to tell dovecot to enable the basic <acronym>SSL</acronym>
+                capability. To do this the first line simply needs to change to</para>
+            <programlisting>ssl = yes</programlisting>
+        </sect3>
+        <sect3>
+            <title>10-logging.conf</title>
+            <para>The final step is to enable a more verbose logging. Strictly speaking this is not
+                necessary but during the setup this is extremly handy in order to pinpoint any
+                potential problems until we have a system that is fully working. Find the following
+                settings and adjust them as shown.</para>
+            <programlisting>log_path = /var/log/dovecot.err
+info_log_path = /var/log/dovecot.info
+debug_log_path = /var/log/dovecot.debug
+auth_verbose = yes
+auth_verbose_passwords =plain
+auth_debug_passwords = yes
+mail_debug = yes
+verbose_ssl = yes</programlisting>
+            <para>
+                <tip>
+                    <para>There is yet another level of logging that can be enabled to give details
+                        on every single <acronym>IMAP</acronym> command received from a client. This
+                        is very verbose and should only be enabled during specific troubleshooting
+                        sessions. Using this level of debugging requires some basic knowledge of the
+                            <acronym>IMAP</acronym> protocol in order to make sense of the
+                        information. This level of debugging is very useful if one suspects that a
+                        mail client sends the wrong <acronym>IMAP</acronym> commands (which is not
+                        completely unheard of)</para>
+                    <para>This is described in the “Rawlog” section in the documentation of Dovecot
+                        (See <link xlink:href="http://wiki2.dovecot.org/Debugging/Rawlog"
+                            >http://wiki2.dovecot.org/Debugging/Rawlog</link>)</para>
+                </tip>
+            </para>
+            <para>Later on when things are working correctly these settings should be changed since
+                it will generate quite a lot of “noise” in the log files.</para>
+        </sect3>
+    </sect2>
+    <sect2>
+        <title> Creating dovecot SSL/TLS certificates</title>
+        <para>In order to use <acronym>IMAPS</acronym> we must first create <acronym>SSL</acronym>
+            certificates and keys in much the same way as we did for the
+                <application>Apache</application>. In fact, it would be perfectly possible to reuse
+            the exact same keys and certificates that we created for the web-server. Just watch out
+            for the names of the certificate files. </para>
+        <para>However as we discussed previously we will use a separate set of certificates for
+                <application>Dovecot</application> and <application>postfix</application>. For the
+            purpose of creating certificates <application>Dovecot</application> includes a small
+            shell script that will call all the necessary <acronym>openssl</acronym> commands in
+            much the same way as <command>gensslcert</command> did for the web-server. This utility
+            script is called <command>mkcert.sh</command> and is found in the directory
+                <filename>/usr/share/doc/packages/dovecot</filename>. To get correct default values
+            in the certificate first open and edit the file <filename>dovecot-openssl.cnf</filename>
+            (that is in the same directory). This configuration file contains the values used for
+            names and organization in the certificate. Open the file in an editor and change the
+            setting to match the wanted setup.</para>
+        <para>Before <command>mkcert.sh</command> is run it is also a good idea to edit a line at
+            the end of that file so that the generated certificate is valid for longer than a year
+            which (unfortunately) is hard code in the end of the script. Change the argument
+                “<option>–days 365</option>” in the end of the script to something a bit longer, for
+            example 3650 days ≈ 10 years.</para>
+        <para> The files generated by this script are shown in <xref
+                xlink:href="#tbl.dovecot-cert-key-files"/></para>
+        <table  xml:id="tbl.dovecot-cert-key-files">
+            <title>Certificate keys generated for Dovecot</title>
+            <tgroup cols="2">
+                <colspec colname="c1" colnum="1" colwidth="1*"/>
+                <colspec colname="c2" colnum="2" colwidth="1*"/>
+                <thead>
+                    <row>
+                        <entry>Certificate file</entry>
+                        <entry>Description</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry><filename>/etc/ssl/certs/dovecot.pem</filename></entry>
+                        <entry><acronym>SSL</acronym>/<acronym>TLS</acronym> certificate. This
+                            certificate contains the public key for Dovecot.</entry>
+                    </row>
+                    <row>
+                        <entry><filename>/etc/ssl/private/dovecot.pem</filename></entry>
+                        <entry><acronym>SSL</acronym>/<acronym>TLS</acronym> private key for the
+                            server. Must be kept private at all times!</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        <para>As you can see this script will not generate any <acronym>CA</acronym> (root
+            certificate). In fact the (test) certificate generated by the Dovecot utility script is
+            by definition a root certificate in itself since it is signed by itself. This differs in
+            behavior from the previously used <command>gensslcert</command> script when we
+            configured Apache which created a separate root certificate. The configuration files in
+            dovecot that specifies already have full path names as default so there is no need to
+            change anything else. </para>
+        <para>Now it is time to restart Dovecot, for example by giving the command</para>
+        <screen>$> rcdovecot restart</screen>
+        <para>If you get an error saying something like </para>
+        <para><computeroutput>Fatal: execv(/usr/bin/doveconf) failed: Permission
+                denied</computeroutput></para>
+        <para>Then our friend Novell <application>AppArmour</application> (which is included by
+            default in a graphical OpenSuSE setup) has kicked in and stopped the process from
+            starting. Since it brings too far to also configure <application>AppArmour</application>
+            in this tutorial simple turn <application>AppArmour</application> off for now by opening
+            Yast and go into Novell <application>AppArmour</application> control panel and disable
+            it. For a personal server <application>AppArmour</application> usually creates more
+            problem than it solves. By default it will block many useful services unless those
+            services have been configured to be allowed.</para>
+    </sect2>
+    <sect2>
+        <title>Testing the dovecot configuration</title>
+        <para>To verify that the basics of our <acronym>IMAP</acronym> server works we can try to
+            manually connect on port <literal>993</literal>, however since that requires a setup of
+            a <acronym>SSL</acronym> encrypted connection we cannot directly connect to the port (we
+            need to use <acronym>openssl</acronym> s_client). So as an alternative we can (as a
+            test) enable normal <acronym>IMAP</acronym> in <filename>10-master.conf</filename>. Do
+            this by un-commenting the line <literal>#port = 143</literal> in the
+                <acronym>IMAP</acronym> section at the top of the file. Now restart Dovecot in the
+            same way as before. </para>
+        <para>We can then login to dovecot using a basic telnet connection</para>
+        <screen>$> telnet localhost 143
+Trying ::1…
+Connected to localhost.Escape character is ‘^]’.* 
+* OK [CAPABILITY MIAP4rev1 LITERAL+ SASL-IR LOGIN-REFERRALS \
+ID ENABLE IDLE STARTTLS AUTH=PLAIN] 
+Dovecot ready.</screen>
+        <para>The last line indicates that Dovecot is running and has accepted our connection. In
+            order to do anything else we must login using a user in the system.</para>
+        <para>The <acronym>IMAP</acronym> login command is login &lt;user> &lt;password> So if you
+            continue the previous telnet session by logging in using a known user and password (this
+            user must exist in your system and should have a proper mailbox under
+                <filename>/srv/mail/</filename>) you should now get a reply resembling</para>
+        <screen>10 login tstuser tstpassword
+10 OK [CAPABILITY ….] Logged in</screen>
+        <para>If you wonder about the "10" in the beginning of the command this is just an arbitrary
+            tag for the command. All <acronym>IMAP</acronym> commands has to be preceded by a user defined tag. When
+            the <acronym>IMAP</acronym> server gives back a reply it will always use the tag for the command that
+            caused this output. Tags allows us to know from which command an output comes from. It
+            is possible to give several commands in a row and some might take long time so there is
+            no guarantee that the servers reply will be in the same order as the given commands.
+            Dovecot ignores the actual characters in the tag so it can be completely
+            arbitrary.</para>
+        <para>The next step is to try list all available folders for this user</para>
+        <screen>10 list “” *
+* LIST (\HasNoChildren) “.” INBOX”
+10 OK List completed.</screen>
+        <para>The above command also makes sure that dovecot can access the folder (in our case
+                <filename role="directory">/srv/mail/tstuser</filename>) </para>
+        <para>If you get this far chances are high that the dovecot setup is correct. After we have
+            configured postfix and we have some mails in our inbox we will manually retrieve them as
+            well. </para>
+        <para>Finally disconnect from dovecot by logging out</para>
+        <screen>10 logout
+BYE Logging out.
+10 OK Logout completed.</screen>
+        <para>The final step remaining is to have Dovecot start automatically each time the server
+            is started. If you haven't already done so give the command (as root): </para>
+        <para>
+            <screen>$> chkconfig –add dovecot2</screen>
+        </para>
+    </sect2>
+    <sect2>
+        <title>Verifying the encrypted IMAP connection</title>
+        <para>For this we need to use the command line tools from the <acronym>openssl</acronym>
+            project which should already be installed. To connect to the server using
+                <acronym>SSL</acronym> enter the command: </para>
+         <screen>$> <acronym>openssl</acronym> s_client -connect localhost:993</screen>
+        <para>Thiis behaves in principle as a telnet connection with the only difference that the
+            connection is encrypted. After the command is execurted information is printed to the
+            screen about the encryption and the certificates and at the end the words
+                “<literal>Dovecot ready.</literal>” should be visible.  Now the same login test as
+            for the non-encrypted connection can be run and then the list of available folders for
+            the <literal>tstuser</literal>.</para>
+    </sect2>
+    <sect2>
+        <title>Troubleshooting Dovecot</title>
+        <para>More hints on how to debug a non-working Dovecot authentication process is described
+            in the Dovecot troubleshooting documentation at: </para>
+        <para><uri>http://wiki2.dovecot.org/Debugging/Authentication</uri>
+        </para>
+        <para>If there is problem with mail synchronization after a successful login to Dovecot
+            server there is one other level of logging (apart from the normal logging that can be
+            setup) that can be helpful and that is to have the actual raw <acronym>IMAP</acronym>
+            commands to be shown. This can be used when bug reports needs to be filed to
+            non-compliant clients. To enable this one must activate the so called
+                <command>rawlog</command> logging in Dovecot. How this can be enabled is described
+            in detail in the Dovecot documentation at </para>
+        <para><uri>http://wiki2.dovecot.org/Debugging/Rawlog</uri>
+        </para>
+    </sect2>
+    <sect2>
+        <title>Adding a full text index</title>
+        <para>In order to drastically (~x1000) speed up full text searches (<acronym>fts</acronym>)
+            of mailboxes it is possible to have Dovecot maintain a full text index for each mail
+            folder. The easiest way to do this is to use Dovecots own full text search engine
+                “<acronym>SQUAT</acronym>” (“<emphasis role="bold">S</emphasis>earch <emphasis
+                role="bold">Q</emphasis>uery <emphasis role="bold">A</emphasis>nswer <emphasis
+                role="bold">T</emphasis>ool”). </para>
+        <para>To add this capability we tell Dovecot to load this plugin by adding the line</para>
+        <para>
+            <programlisting>mail_plugins = $mail_plugins fts fts_squat</programlisting>
+        </para>
+        <para>in the file “<filename>20-imap.conf</filename>”. We must also globally enable these
+            plugins and give some parameters in the file
+            “<filename>90-plugin.conf</filename>”</para>
+        <para>
+            <programlisting>plugin { 
+  fts = squat 
+  fts_squat = partial=4 full=8
+} </programlisting>
+        </para>
+        <para>The index is initially created the very first time a search is performed on a
+            directory so the first time will take extra time and memory depending on the number of
+            mails in the directory. After the first time Dovecot will update the index incrementally
+            as changes are made to the mail directories. </para>
+        <para>The only drawback enabling indexes is that they will use extra disk space. The needed
+            space depends on the specific settings (see the Dovecot manual). But a minimum index
+            size of ~30% of the total mail size in each directory can be expected. With the
+            parameters as above one can expect ~60% index size. The parameters adjusts the tradeoff
+            between speed of search and space usage.</para>
+    </sect2>
+    
+</sect1>

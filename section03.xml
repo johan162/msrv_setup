@@ -1,0 +1,615 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?hard-pagebreak?>
+<sect1 xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
+    version="5.0" revision="$Id: section03.xml 56 2012-07-23 19:38:49Z ljp $">
+    <title>The setup process</title>
+    <para>It is now time to start the setup process. There are a number of steps that needs to be
+        done and as we progress each step will be tested separately as far as possible before we
+        move on to the next and finally the complete system. The steps are explained below and also
+        illustrated in <xref xlink:href="#fig.setup-process"/>:</para>
+    <figure xml:id="fig.setup-process">
+        <title>Steps in the setup process</title>       
+        <mediaobject>
+            <imageobject role="fo">
+                <imagedata fileref="figures/setup-process.png" scalefit="1"  width="45%" contentwidth="45%"/>
+            </imageobject>
+            <imageobject role="html">
+                <imagedata fileref="figures/setup-process.png" scalefit="1" contentwidth="700px"/>
+            </imageobject>            
+        </mediaobject>
+    </figure>    
+        <orderedlist>
+            <listitem>
+                <para>Setup <application>Apache</application> to accept <emphasis role="bold"
+                    >https://</emphasis> traffic by creating a self-signed certificate for
+                    <application>Apache</application>. This is necessary so that we can access
+                    <application>Roundcube</application> (see below) securely. We start here since
+                this is a self-contained task and can be tested separately.</para>
+            </listitem>
+            <listitem>
+                <para>Setup <application>Dovecot</application> as an <acronym>IMAP</acronym> server.
+                We will also configure the server to use a secure connection based on
+                    <acronym>SSL/TLS</acronym> so we can securely access our mails. This requires us
+                to create another set of self-signed certificates to be used by
+                    <application>Dovecot</application>. In addition we will also configure Dovecot
+                to be used as the authentications server for Postfix so that only authenticated
+                users can send mail through our <acronym>SMTP</acronym> server (i.e.
+                    <application>postfix</application>) this is <emphasis role="bold">very
+                    important</emphasis> to avoid creating an open relay that could potentially be
+                exploited by a spammer.</para>
+            </listitem>
+            <listitem>
+                <para>Setup <application>Postfix</application> to both accept incoming
+                    <acronym>SMTP</acronym> traffic (with authentication via
+                    <application>Dovecot</application>) as well as sending mail as a relay through
+                to the ISPs <acronym>SMTP</acronym> server if the recipient is non-local. We also
+                need to instruct postfix to use <application>procmail</application> as
+                    <acronym>LDA</acronym> (<termdef>Local Delivery Agent</termdef>) to store the
+                mails in a suitable location in the mail storage.</para>
+            </listitem>
+            <listitem>
+                <para>Setup <application>fetchmail</application> to gather mail from any external
+                mail providers and deliver it back to <application>postfix</application>.</para>
+            </listitem>
+            <listitem>
+                <para>Setup <application>spamassassin</application> as a spam filtering engine in
+                the background by using its daemon mode option. Received mails are then run through
+                the <application>spamassassin</application> client (<command>spamc</command>) by
+                procmail.</para>
+            </listitem>
+            <listitem>
+                <para>Setup <application>procmail</application> to use
+                    <application>spamassassin</application> to filter spam and store them in a
+                separate folder on the <acronym>IMAP</acronym> server. The emails will be delivered
+                to <application>procmail</application> from <application>Postfix</application>
+                (piped) when postfix has decided that the mails should be delivered to a local user.
+                    <application>Postfix</application> will invoke
+                    <application>procmail</application> to do the local delivery as the user who’s
+                mail we are going to deliver. The instructions to
+                    <application>procmail</application> will then be read from &lt;user home
+                    directory><filename>/.procmailrc</filename>.</para>
+            </listitem>
+            <listitem>
+                <para>Finally we will install and setup <application>Roundcube</application> to
+                access the <acronym>IMAP</acronym> server to be able to read and manipulate mails
+                via a Web-interface. This will also include the configuration of a database
+                    (<application>MySQL</application>) for Roundcube to make use of. </para>
+            </listitem>
+        </orderedlist>
+    
+
+    <sect2>
+        <title>Some ports and acronyms used</title>
+        <para>For the <acronym>TCP/IP</acronym> communication there are a number of ports and
+            acronyms that are used in a mail setup and it is good to have a shortlist handy. <xref
+                xlink:href="#tbl.ports-used-in-mail"/> and <xref xlink:href="#tbl.acronyms-in-mail"
+            /> list the ports and terms we will be using. For historic reasons several port numbers
+            have been used for the same purpose and can lead to some confusion. This is especially
+            true for the port numbers possible to use for secure <acronym>SMTP</acronym>. This is
+            further elaborated in the section dealing with <application>procmail</application>
+            setup.</para>
+        <para>In our setup we will use the secure version of all the protocols involved. This will
+            unfortunately add some steps in the process but doing anything else would be
+            irresponsible!</para>
+        <table xml:id="tbl.ports-used-in-mail">
+            <title>Port numbers relating to mail handling</title>
+            <tgroup cols="3">
+                <colspec colname="c1" colnum="1" colwidth="1*"/>
+                <colspec colname="c2" colnum="2" colwidth="1*"/>
+                <colspec colname="c3" colnum="3" colwidth="5*"/>
+                <thead>
+                    <row>
+                        <entry>Port</entry>
+                        <entry>Protocol</entry>
+                        <entry>Comment</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry>80</entry>
+                        <entry>HTTP://</entry>
+                        <entry>
+                            <para>Hypertext protocol</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>443</entry>
+                        <entry>HTTPS://</entry>
+                        <entry>
+                            <para>Encrypted hypertext protocol over SSL/TLS</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>143</entry>
+                        <entry>IMAP</entry>
+                        <entry>
+                            <para><termdef>Internet Message Access Protocol</termdef> used to access
+                                a mail storage</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>993</entry>
+                        <entry>IMAPS</entry>
+                        <entry>
+                            <para>Encrypted <acronym>IMAP</acronym> protocol over SSL/TLS</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>25</entry>
+                        <entry>SMTP</entry>
+                        <entry>
+                            <para><termdef>Simple Mail Transfer Protocol </termdef>used to speak
+                                with a mail server</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>465</entry>
+                        <entry>(SMTPS)</entry>
+                        <entry>
+                            <para>Simple Mail Transfer Protocol with SSL. Unfortunately this
+                                    <emphasis role="bold">is not</emphasis> an officially
+                                recognized/registed port for this purpose. Historically this can be
+                                traced back to Appendix A of the 1996 non-standard standard <link
+                                    xlink:href="http://wp.netscape.com/eng/ssl3/draft302.txt">The
+                                    <acronym>SSL</acronym> Protocol Version 3.0</link> This port should not be used in
+                                a modern server setup. Use port 587 (see below) instead.</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>587</entry>
+                        <entry>SMTP/SMTPS</entry>
+                        <entry>
+                            <para>Email submission (See RFC 2476). This is the officially registered
+                                port that should be used when a mail client submits a message to a
+                                mail server. The difference with Port 25 is that port 25 should only
+                                be used for mail-server to mail-server communication. For historical
+                                reason, port 25 has also been used to accept mail client
+                                submissions.</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>110</entry>
+                        <entry>POP3</entry>
+                        <entry>
+                            <para><termdef>Post Office Protocol</termdef>. The "old" way of
+                                accessing a mail storage. Should not be used any more (only listed
+                                here for completeness)</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry>995</entry>
+                        <entry>POP3S</entry>
+                        <entry>
+                            <para>Encrypted POP3 protocol over SSL/TLS</para>
+                        </entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        <table xml:id="tbl.acronyms-in-mail">
+            <title>Acronyms used in this tutorial</title>
+            <tgroup cols="2">
+                <colspec colname="c1" colnum="1" colwidth="1*"/>
+                <colspec colname="c2" colnum="2" colwidth="6*"/>
+                <thead>
+                    <row>
+                        <entry>Acronym</entry>
+                        <entry>Description</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry><acronym>SMTP</acronym></entry>
+                        <entry>
+                            <para><termdef>Simple Mail Transfer Protocol</termdef>, protocol used to
+                                send mail between servers. Note do no confuse with the name of the
+                                postfix two daemons SMTP/SMTPD</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry><acronym>SMTPS</acronym></entry>
+                        <entry>
+                            <para>Encrypted <acronym>SMTP</acronym> protocol (using TSL/SSL)</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry><acronym>IMAP</acronym></entry>
+                        <entry>
+                            <para><termdef>Internet Message Access Protocol</termdef>, The protocol
+                                between a mail client (e.g. Roundcube) and the mail server. Allows
+                                manipulation of mails and synchronizing local mails to a local
+                                storage.</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry><acronym>IMAPS</acronym></entry>
+                        <entry>
+                            <para>Encrypted <acronym>IMAP</acronym> protocol (using TSL/SSL) </para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry><acronym>TLS</acronym></entry>
+                        <entry>
+                            <para><termdef>Transport Layer Security</termdef> (formly known as
+                                    <acronym>SSL</acronym>=<termdef>Secure Socket Layer</termdef>).
+                                There are technical differences but for end users they do behave the
+                                same. </para>
+                            <para>There is however one crucial difference in that
+                                    <acronym>SSL</acronym> uses encrypted communication from the
+                                very start while <acronym>TLS</acronym> uses plain text initially
+                                and once the two communicating partners has agreed on encryption the
+                                remaining communication is encrypted. This has the advantage that
+                                the same port can be used for both encrypted and non encrypted
+                                version of a protocol.</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry><acronym>MTA</acronym></entry>
+                        <entry>
+                            <para><termdef>Mail Transfer Agent</termdef>, generic name for the
+                                actual program that speaks <acronym>SMTP</acronym> (in our case
+                                postfix)</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry><acronym>MUA</acronym></entry>
+                        <entry>
+                            <para><termdef>Mail User Agent</termdef>, generic name for the actual
+                                mail client (<application>Roundcube</application> in our
+                                case)</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry><acronym>LDA</acronym></entry>
+                        <entry>
+                            <para><termdef>Local Delivery Agent</termdef>, generic name for whatever
+                                program is responsible for the final mail delivery to the recipients
+                                mail box (procmail in our case)</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry><acronym>PAM</acronym></entry>
+                        <entry>
+                            <para><termdef>Pluggable Authentication Modules</termdef>. A generic
+                                framework for authentication in a Linux system. This allows clients
+                                to perform authentication on a system without knowing the exact
+                                methods this authentication is done by. The historic way of
+                                performing authentication is by the usage of a user/password file
+                                but other ways are available as well, for example via
+                                <acronym>LDAP</acronym> (<termdef>Lightweight Directory Access Protocol</termdef>) databases. </para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry><acronym>SASL</acronym></entry>
+                        <entry>
+                            <para><termdef>Simple Authentication and Security Layer</termdef>. This
+                                is another generic framework for authentication but intended to be
+                                used by various internet protocols. Usage of this framework allows
+                                decoupling of protocol authentication from the actual system it is
+                                talking to.</para>
+                        </entry>
+                    </row>
+                    <row>
+                        <entry><acronym>PEM</acronym></entry>
+                        <entry>
+                            <para><termdef>Privacy Enhance Mail</termdef>, A file format to store
+                                    <acronym>SSL</acronym>/<acronym>TLS</acronym> key pairs,
+                                commonly used in Unix like systems.</para>
+                        </entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+    </sect2>
+    <sect2>
+        <title>Using SSL/TLS certificates</title>
+        <para>It is impossible to avoid <acronym>SSL/TLS</acronym> (<termdef>Secure Socket
+                Layer</termdef> / Transport Layer Security) certificates when configuring a mail
+            server using encrypted communication. We must therefore start with a simplified
+            explanation of key pairs and certificates since they are the heart in the encryption of
+            the data between a client and a server. We will use <acronym>openssl</acronym> to manage
+            the so called <acronym>SSL/TLS</acronym> encryption (this is used by most people in the
+            Unix world). In <xref xlink:href="#appendix.openssl"/>. we discuss more in detail how to
+            use this library and associated programs directly to create the necessary keys.</para>
+        <para>The <acronym>openssl</acronym> library supports most (if not all) public used cryptos
+            intended for secure communication and has a very large number of commands and
+            sub-commands. In the following we will only shortly discuss the basic usage of
+                <acronym>openssl</acronym> since a full discussion is outside the scope of tis
+            tutorial.</para>
+        <para>
+            <caution>
+                <para><acronym>openssl</acronym> has been around for a long time and as it has
+                    evolved old parameters which for all practical purposes and intents are
+                    deprecated still remains in the program to ensure backward compatibility. This
+                    means that the number of commands, options and suboptions possible to give to
+                        <acronym>openssl</acronym> is mind boggling. Consequently a number of
+                    scripts available on "the net" uses old deprecated methods since there are very
+                    little incentive to learn new (and better) ways of doing things. The learning
+                    curve for <acronym>openssl</acronym> is quite steep but luckily we only need a
+                    small subset of available commands.</para>
+            </caution>
+        </para>
+        <sect3>
+            <title>Certificates and keys</title>
+            <para>In short the <acronym>SSL/TLS</acronym> certificates (or <acronym>SSL/TLS</acronym> key-pair) serve two purposes:</para>
+            <para>
+                <orderedlist>
+                    <listitem>
+                        <para>Form the encryption base for the public key anti-symmetric encryption
+                            (different keys for encryption and decryption) used in the
+                                <acronym>SSL</acronym>/<acronym>TLS</acronym>
+                                (<acronym>openssl</acronym> can also handles symmetric
+                            encryption).</para>
+                    </listitem>
+                    <listitem>
+                        <para>Prove the identity of the server that you are connecting to</para>
+                    </listitem>
+                </orderedlist>
+            </para>
+            <para>Public key encryption is based on two different (anti-symmetric) keys, one public
+                key and one private key.</para>
+            <para>The common way is to use the public key to encrypt data to be sent and the private
+                key to decrypt the same data. However, since the encryption is anti-symmetric it can
+                also be used the other way around. Encrypting with the private key and decrypted
+                with the public key. This can be used to assure that a message comes from a trusted
+                sender as follows.</para>            
+            <para>Assuming we know with 100% certainty that the public key we have really comes from
+                a specific server. If the server then encrypts a message string with its own private
+                key we can decrypt it with the public key and if it decrypts correctly to a valid
+                message we can be reasonable sure that the message really comes from that specific
+                server.</para>
+            <note>
+                <para>When talking about <acronym>SSL/TLS</acronym> certificates one should
+                    really refer to them as <acronym>X.509</acronym> certificates which was
+                    standardized a long time ago by ITU-T. The original designer of
+                    <acronym>SSL/TLS</acronym> certificate handling, Netscape (anyone remembers
+                    them?), used the already existing standard of <acronym>X.509</acronym>
+                    certificates when they created the <acronym>SSL/TLS</acronym> protocol. The use
+                    of <acronym>X.509</acronym>/<acronym>SSL</acronym>/<acronym>TLS</acronym>
+                    certificates on the internet is described in RFC 5280. The name
+                    <acronym>SSL</acronym>/<acronym>TLS</acronym> certificates has stuck
+                    (probably since it is easier to say than <acronym>X.509</acronym>) and we will
+                    be using this name in this text. However when using <acronym>openssl</acronym>
+                    to create certificates one specifies <acronym>X.509</acronym> as the format for
+                    the certificates so it might be good to know and understand where this strange
+                    name comes from.</para>
+            </note>              
+            <para>The public key is in this context is usually referred to as a certificate and is
+                by convention often stored in a file with the ending “<filename role="fileset"
+                    >*.crt</filename>” and the private key (again by convention) is stored in a file
+                with the ending “<filename role="fileset">*.key</filename>”. This naming convention
+                is unfortunate since the keys are actually stored in a format known as
+                    <acronym>PEM</acronym> (see the fact box below).</para>
+              
+                <note>
+                    <para>The most common format in the Unix world to store the certificates in is
+                    in the so called <acronym>PEM</acronym> (originally from <termdef>Privacy
+                        Enhanced Mail</termdef>) format. This is basically a base64 encoding of the
+                    binary data that makes up the key (the <acronym>X.509</acronym> specifies the
+                    binary format to be in <acronym>ASN.1</acronym>). The base64 encoding makes it
+                    possible to treat the file as ordinary text files. There are other possible
+                    binary formats of keys (and certificates) Windows usually use one of those but
+                    we will not discuss this further here.</para>
+                    <para>A common practice to differentiate the contents of the files where the
+                        public and private keys are stored is to use different suffixes on the
+                        certificate and the private key files.</para>
+                    <para>Even though the keys are in the same format (<acronym>PEM</acronym>) they
+                    are stored in files with different suffixes. One very common way is to give the
+                    public key the ending “*.crt” and the private key the ending “*.key”. This is
+                    not ideal since our view is that the file suffix should indicate the technical
+                    format/encoding of the file. However, this is common practice so we just accept
+                    this for now. (In <xref xlink:href="#appendix.openssl"/> we show another naming
+                    standard that makes more sense to us.)</para>
+                    <para>It is also possible to store both the public and private key in the same
+                        file. This is useful for applications where we are never expected to
+                        manually hand out a public key but where this is done programmatically
+                        between programs/system. The advantage of storing both the public and
+                        private key in the same file is obvious; one never risks of mixing the
+                        public/private key with the wrong other key.</para>
+                    <para>The <acronym>PEM</acronym> format specifies a textual header before the
+                    private and public key so they are easily identified even if they are stored in
+                    the same file.</para>
+                </note>
+            
+            <para>In order to prove the authenticity of a public key some companies that are trusted
+                (a <termdef>certification agency</termdef>, <acronym>CA</acronym>) will first
+                encrypt the servers’ public key (against a quite hefty fee). When the public key is
+                distributed it can be verified by the client by decrypting it with the
+                    <acronym>CA</acronym>s public key. The public key from the <acronym>CA</acronym>
+                has to have been previously distributed in some other way so that the client has
+                access to that public key in safe way. Therefore such a public key, which is usually
+                a root certificate, is included with the distribution of browsers. The principle of
+                this is shown in Figure <xref xlink:href="#fig.signing-process"/>.</para>
+            <para>Certificates can also be chained. A super trusted company can sign a certificate
+                from a trusted company which in turn could sign your certificate (an intermediate
+                agent). If the browser has the (root) certificate from the super trusted company it
+                will implicitly also validate any child certificates stemming from this super
+                trusted company. </para>    
+        <para>In our setup we will become our own certification agency and create a “super” key pair
+                that we will use to sign (encrypt) all the public keys we will be using. Hence the
+                name self-signed certificates. Technically speaking this is only one definition of
+                the term self-signed certificate and is theoretically not quite correct. It is
+                however a common “miss-use” of this term. In <xref xlink:href="#appendix.openssl"/>
+                we elaborate on this.</para>
+        </sect3>
+        <sect3>
+            <title>Protocols using encryption in our setup</title>
+        <para>In our setup we will use <acronym>SSL/TLS</acronym> certificates (encryption) to
+                handle the following protocols:</para>
+        <para>
+            <itemizedlist>
+                <listitem>
+                    <para><acronym>HTTPS</acronym> - Encrypted communication to our
+                            Web-server</para>
+                </listitem>
+                <listitem>
+                    <para><acronym>SMTPS</acronym> - Encrypted communication with our Mail-server
+                            (postfix)</para>
+                </listitem>
+                <listitem>
+                    <para><acronym>IMAPS</acronym> - Encrypted communication with our
+                            Mail-storage-server (Dovect)</para>
+                </listitem>
+            </itemizedlist>
+        </para>
+        <para>In principle we could use the same key-pair for all these channels but in our setup we
+                will use one key-pair for the Web-server and one key-pair for both the
+                    <acronym>SMTPS</acronym> and the <acronym>IMAPS</acronym> channels. The
+                motivation for this is that the Web-server is one standalone server which could be
+                used for a multitude of applications and the
+                    <acronym>SMTPS</acronym>/<acronym>IMAPS</acronym> channels logically belong
+                together as one application. The public <acronym>HTTPS</acronym> key should also be
+                distributed to Web-clients wanting to connect to our web-server without getting
+                browser warnings.</para>
+        <para>In addition we will create our own <acronym>CA</acronym> (root) certificate that we
+                will use to sign all these key-pairs (certificates). Our hierarchy of certificates
+                is shown in <xref xlink:href="#fig.cert-hierarchy"/>. The public root certificate
+                should also be distributed to all clients for them to verify the other
+                certificates.</para>
+        <para>We should also make a note of the key length here. By default
+                    <acronym>openssl</acronym> uses a key lengths of 1024 bits. To protect ordinary
+                mail from the occasional snooping this is good enough.</para>
+        <figure xml:id="fig.signing-process">
+            <title>SSL/TLS Certificate signing process</title>
+            <mediaobject>
+                <imageobject role="fo">
+                    <imagedata fileref="figures/cert-key-overview.png" scalefit="1" width="50%"
+                        contentwidth="50%"/>
+                </imageobject>
+                <imageobject role="html">
+                    <imagedata fileref="figures/cert-key-overview.png" scale="80" />
+                </imageobject>
+                
+            </mediaobject>
+        </figure>
+        <para>However, for corporate level protection a key length of at least 2048 bits is
+                recommended and for even further protection a key of 4096 bits can be used. The main
+                drawback of longer key lengths is the increased processing power and time it
+                requires for decryption/encryption.</para>
+        <para>
+            <note>
+                <para>From 2011 Microsoft has removed all 1024 bit root certificate from the
+                        distribution of its browser.</para>
+            </note>
+        </para>
+        <para>A valid question now is who signs the <acronym>CA</acronym> (root) certificate? </para>
+            <para>The answer is no-one. These certificates (key-pairs) are trusted because we say so
+                (they are truly self-signed). They don't need higher authority, technically they
+                have a flag set in the certificate saying that <emphasis role="italic">"this is a
+                    trusted root certificate that doesn't need anyone else to vouch for
+                    it</emphasis>", hence we should trust it. This also means that when we install
+                these root certificates we have to make sure we are installing them from a secure
+                source that we trust. It could potentially be devastating if we were to install
+                bogus root certificates that were controlled by an "evil" entity since they could
+                potentially fool us into believing that a signed program was produced by a trusted
+                party when it in fact could be a spy program.</para>
+            <para>Browsers, for example, comes with a large set of root certificates from trusted
+                sources as do all Linux distribution. In the case of OpenSuSE all trusted root
+                certificates can be found under the directory <filename role="directory"
+                    >/etc/ssl/certs/</filename></para>
+        <para>All key-pairs can be created by using the <acronym>openssl</acronym> package (and more
+                specifically the “<acronym>openssl</acronym>” command with various options). As
+                mentioned before the steps to create these keys (certificates) and doing the signing
+                are not really difficult taken step by step (and is shown in <xref
+                    xlink:href="#appendix.openssl"/>.) but there are a number of steps to be taken
+                and since even professional system administrators do this fairly seldom there is no
+                point in committing all the detailed steps to memory.</para>
+        <para>Exactly for this reason there are a number of shell scripts floating around that lines
+                up the commands needed to create all these certificates so one does not have to
+                memorize all the steps in using the <acronym>openssl</acronym> library. The library
+                and associated tools are not exactly user friendly so even professionals that deals
+                with this library on a regular basis create there own utility script to make life
+                easier. Unfortunately there isn't a set of “commonly agreed” utility scripts.</para>
+        <para><acronym>X.509</acronym>/<acronym>SSL</acronym>/<acronym>TSL</acronym> certificates
+                introduces several terms that must be understood. The most important is the
+                    <termdef>Distinguished Name</termdef> or <acronym>DN</acronym>. This is a unique
+                name used to identify a particular certificate (and key) among all other 1000s of
+                certificates in the world. Hence this must be unique to each certificate.</para>
+        <para>
+            <figure xml:id="fig.cert-hierarchy">
+                <title>Certificate hierarchy</title>
+                <mediaobject>
+                    <imageobject role="fo">
+                        <imagedata fileref="figures/cert-key-hierarchy.png" scalefit="1" width="50%"
+                            contentwidth="50%"/>
+                    </imageobject>
+                    <imageobject role="html">
+                        <imagedata fileref="figures/cert-key-hierarchy.png" scale="80" />
+                    </imageobject>
+                </mediaobject>
+            </figure>
+        </para>
+        <note>
+            <para>Beware that many <acronym>SSL/TLS</acronym> scripts floating around on the net are
+                    “Chinese whispers”. While they do work they use since long obsoleted options and
+                    ways to do things that are no longer recommended (at least since 2004!). The
+                    reason is most likely that getting into the details of
+                        <acronym>openssl</acronym> is not something many people want to do. So
+                    finding a small script on the net that seems to do the job is good enough for
+                    most people and so the scripts (unfortunately) gets handed down to the next
+                    unsuspecting generation. </para>
+            <para>Again, in <xref xlink:href="#appendix.openssl"/> we show the proper (and modern)
+                    way of handling <acronym>openssl</acronym>. </para>
+        </note>
+        <para>The <acronym>DN</acronym> is in turn made up of several fields such as organization
+                name, unit within the organization, town, state etc. One field in the
+                    <acronym>DN</acronym> with very special meaning is the <termdef>Common
+                    Name</termdef> (or <acronym>CN</acronym>) field. This is used to identify the
+                domain name (e.g. www.example.com) that is used to access the server where the
+                certificate is valid. If the <acronym>CN</acronym> differs from the
+                    <acronym>URL</acronym> that is used to access (for example) a Web-server you
+                will normally get a warning that the authenticity of the server cannot be
+                guaranteed. The <acronym>CN</acronym> is normally the fully qualified domain name
+                    (<acronym>FQD</acronym>) of the server. This poses some problems if the server
+                is multi-homed, i.e. it can be accessed using different URLs, for example if both
+                    <uri>http://www.example.com</uri> and <uri>http://example.com</uri> are valid
+                aliases. For this reasons there are extensions (in the <acronym>X.509</acronym>
+                standard) that makes it possible to add a number of aliases that the certificate
+                should be valid under (all aliases must however still resolve to the same
+                    <acronym>IP</acronym> address). How this is done is further described in <xref
+                    xlink:href="#appendix.openssl"/>. This is also an example of quite important
+                information that is not commonly found on all the sites that discuss certificate
+                handling.</para>
+        <para>The final step after creating all the certificates is to install the public
+                    <acronym>CA</acronym> (the root certificate) that was used to sign the
+                certificates in our browser and possible mail client(s) to avoid warnings about
+                untrusted certificates. This is strictly speaking not necessary but will avoid
+                annoying warnings whenever a connection is made to the server, for example via a
+                Web-browser.</para>
+        <para>
+            <note>
+                <para>A <acronym>X.509</acronym>/<acronym>SSL</acronym>/<acronym>TSL</acronym>
+                        certificate is not exactly identical to the public key. A certificate acts
+                        as a container for the public key and adds additional information such as
+                        who has issued the certificate and who has guaranteed the authenticity of
+                        the certificate and various other information such as how long the
+                        certificate is valid for. </para>
+                <para>If more information about a certificate is wanted <acronym>openssl</acronym>
+                        can display a more detailed textual printout. The following examples shows
+                        how to printout information in various situations.</para>
+                    <para>To view information on the public certificate use the command </para>
+                <para>
+                        <screen>$> <acronym>openssl</acronym> x509 –noout –text –in mycert.pem</screen>
+                    </para>
+                <para>To view the technical details about the private key use the command </para>
+                <para><screen>$> <acronym>openssl</acronym> rsa –noout –text –in mykey.pem</screen>To
+                        view the details about a certificate request use the command </para>
+                <para>
+                        <screen>$> <acronym>openssl</acronym> req –noout –text –in mykey.pem</screen>
+                    </para>
+            </note>
+        </para>
+        <para>In the following description of the setup of <application>Apache</application> and
+                    <application>Dovecot</application>/<application>postfix</application> we have
+                made use of the utility scripts that are available with OpenSuSE since this is the
+                easiest way to get up and running without having to learn too many details about
+                    <acronym>openssl</acronym>. However, after a working setup is achieved we
+                strongly encourage reading through <xref xlink:href="#appendix.openssl"/>. where a
+                more satisfying and complete description and setup of <acronym>SSL/TLS</acronym>
+                certificates can be found. Reading through that appendix will take away part of the
+                “black-magic” clouding this area.</para></sect3>
+    </sect2>
+       
+    
+</sect1>

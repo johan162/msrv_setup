@@ -1,0 +1,599 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?hard-pagebreak?>
+<sect1 xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
+    version="5.0" revision="$Id: section06.xml 56 2012-07-23 19:38:49Z ljp $">
+    <title>Setting up postfix</title>
+    <para>To remind ourself where we are in the overall setup process the setup of postfix will make
+        it possible to send mails from our own machine by connecting to a running postfix daemon via
+        the SMTP(S) protocol. </para>
+    <para>All relevant postfix configuration files can be found in the <filename role="directory"
+            >/etc/postfix/</filename> directory. In the first instance we will setup postfix using a
+        regular <acronym>SMTP</acronym> connection without the added complexity of a
+            <acronym>SSL/TLS</acronym> certificate. Once we have this working we will modify the
+        configuration to use the same key and certificate we created for Dovecot. This will work
+        just fine as long as Dovecot and the <acronym>SMTP</acronym> server are running on the same
+        host. If they are running on separate hosts a separate and unique certificate for postfix
+        must be created since each server with unique IP address must have its own certificate (to
+        avoid warnings from clients connecting to them). </para>
+    <para>In postfix there are two files in the <filename role="directory">/etc/postfix</filename>
+        directory. we need to update:</para>
+    <para>
+        <itemizedlist>
+            <listitem>
+                <para><filename>main.cf</filename> - This is where all settings are stored, one huge
+                    parameter file</para>
+            </listitem>
+            <listitem>
+                <para><filename>master.cf</filename> - This file controls what helper processes are
+                    started and on what ports they are listening. </para>
+            </listitem>
+        </itemizedlist>
+    </para>
+    <caution>
+        <para>The changes you make manually in the postfix configuration might come into conflict if
+            you later on decide to use Yast setup for the mail server. <emphasis role="bold">So
+                don’t use the YAST setup once you have manually configured postfix</emphasis> (into
+            perfection!). Actually we would recommend against using Yast mail server setup for any
+            serious mail server since the tuning possibilities are near to zero. </para>
+        <para>Also, please be careful when editing the configuration file and watch out for setting
+            the correct server variable. Sender or receiver, i.e. with prefix
+                <literal>smtp_</literal><emphasis role="italic">&lt;variable></emphasis> or
+                <literal>smtpd_</literal><emphasis role="italic">&lt;variable></emphasis> this is a
+            common source of errors that can be surprisingly time consuming to find.</para>
+    </caution>
+    <sect2>
+        <title>User authentication in postfix</title>
+        <para>Before we continue we need to discuss how postfix handles user authentication. When do
+            we need that? By default postfix restricts who can use our server to send mail based on
+            IP address. It will allow clients on the same sub-network as the server. However, with
+            mobile usage we will most likely connect to our postfix server through a broadband
+            router and then the router will forward our request to the server. Hence the request
+            looks like it is coming from our sub-network (our gateway) and will be allowed. This
+            would then allow anyone that knows our official IP address to the gateway (and the port
+            to use) to use our <acronym>SMTP</acronym> server to send mail that looks like it is
+            coming from us! This is what is known as an open relay and is something really
+            bad.</para>
+        <para>So, we need a way to authenticate users before they are allowed to send mail via the
+                <acronym>SMTP</acronym> server. By itself postfix has no built-in method for this.
+            Instead it is constructed to use an external library which implements an API known as
+                <acronym>SASL</acronym> (Simple Authentications and Security Layer). The
+                <acronym>SASL</acronym> library is a completely independent of postfix. There are
+            several available providers of a compliant SASL library (for example the
+                <acronym>SASL</acronym> authentication daemon <application>saslauthd</application>).
+            The good news here is that Dovecot provides one possible implementation of a
+                <acronym>SASL</acronym> library. Since we already have Dovecot installed it seems a
+            good idea to use it. As you may recall we made some provisions for this when we
+            configured Dovecot (even though we didn't explain the details at the time). </para>
+        <para>So after we have configured postfix to use the Dovecot <acronym>SASL</acronym> the
+            following happens when a user connects.</para>
+        <para>
+            <orderedlist>
+                <listitem>
+                    <para>Postfix send the authentication details through the
+                            <acronym>SASL</acronym> API to Dovecot</para>
+                </listitem>
+                <listitem>
+                    <para>Dovecot receives the authentication details and uses the configured way to
+                        lookup the user details. By default dovecot uses the Linux
+                            <acronym>PAM</acronym> framework which normally is configured to check
+                        the user and password from the shadow password file. This requires all mail
+                        users to also have an account on the server. Dovecot can also use other
+                        methods such as an <acronym>LDAP</acronym> server or even a database with
+                        all the user credentials stored. The main advantage with storing users in a
+                        DB is that they do not need to have user accounts on the server.</para>
+                </listitem>
+                <listitem>
+                    <para>Dovecot returns fail or success to postfix which based on this knows
+                        whether to accept or reject the incoming call.</para>
+                </listitem>
+            </orderedlist>
+        </para>
+        <para>There is still one problem with this authentication setup in that the user and
+            passwords are sent in plain text over the network. For automatic network sniffers this
+            is a gold mine since harvesting valid user/passwords combos is what spammers are after.
+            The way to protect our conversation is to use <acronym>SSL/TLS</acronym> encryption of
+            the communication between the client and the server in the same way we protected the
+                <acronym>IMAP</acronym> and <literal>https://</literal> traffic.</para>
+        <para>
+            <note>
+                <para><acronym>SSL</acronym> (Secure Socket Layer) was renamed
+                        <acronym>TLS</acronym> (Transport Layer Security) by the
+                        <acronym>IETF</acronym> (Internet Engineering Task Force) as of version 3.1.
+                    There are some technical differences between <acronym>SSL</acronym> and
+                        <acronym>TLS</acronym> but for all practical reasons (as far as we are
+                    concerned) they are the same.</para>
+            </note>
+        </para>
+        <sect3>
+            <title> Configuring Dovecot SASL in postfix</title>
+            <para>Assuming we keep the network settings as default (allowing clients from the same
+                sub-network to connect). We need to add/change the following settings in the postfix
+                configuration file.</para>
+            <programlisting>smtpd_sasl_auth_enable = yes
+broken_sasl_auth_clients = yes
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+smtpd_sasl_security_options = noanonymous</programlisting>
+            <para>Then add <code>permit_sasl_authenticated</code> to the
+                    <code>smtpd_recipient_restrictions</code> section as the following example shows  </para>
+            <para>
+                <programlisting>smtpd_recipient_restrictions = permit_mynetworks, permit_sasl_authenticated, \
+reject_unauth_destination </programlisting>
+            </para>
+            <para>The <emphasis role="bold">order of these restrictions are important</emphasis> as
+                it is to finish with <literal>reject_unauth_destination</literal> since by default
+                the connection will just “fall through” and be allowed !</para>
+        </sect3>
+        <sect3>
+            <title>Configuring postfix to use our ISPs <acronym>SMTP</acronym> server</title>
+            <para>If your server, like most home servers, does not have a fixed IP address you
+                cannot send mails directly from your home server since all official mail servers on
+                the internet must have a fixed IP address and have a so called,
+                    <acronym>MX</acronym> record in the <acronym>DNS</acronym> server which
+                identifies the server as a <emphasis role="bold">M</emphasis>ail e<emphasis
+                    role="bold">X</emphasis>change server. Hence we must go through another proper
+                mail server to send mail. This other mail server is usually our ISPs server (but it
+                doesn’t have to be). This is known as making our <acronym>SMTP</acronym> server a
+                relay server (since it relays mail to this other proper mail server). </para>
+            <para>Most likely we also need to give a username/password in order for us to be able to
+                login to our ISPs mail server. In the following we assume that our
+                    <acronym>ISP</acronym>:s mail server is called
+                    “<literal>smtp.ourisp.com</literal>” and accepts connection not on the standard
+                port 25 but on port 26 (just to show how to handle other ports) </para>
+            <para>We must then add the following line in the configuration file</para>
+            <para>
+                <programlisting>relayhost = [smtp.ourisp.com]:26</programlisting>
+            </para>
+            <para><emphasis role="italic">(The reason for putting the provider address in brackets
+                    is to avoid an MX lookup which can provide some problems. There are some valid
+                    (and good) reasons for this. But again, it would take too far outside this
+                    document to fully explain this.)</emphasis>
+            </para>
+            <para>We also need to provide the correct user/password that our <acronym>ISP</acronym>
+                has given us. In <filename>main.cf</filename> we point to a file where these
+                credentials are stored.</para>
+            <para><programlisting>smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd</programlisting>
+                and in the file <filename>sasl_passwd</filename> we add the line </para>
+            <para>
+                <programlisting>[smtp.ourisp.com]:26 username:password</programlisting>
+            </para>
+            <para>where the <literal>username:password</literal> are replaced by the proper values.
+                Note that since both the <literal>username</literal> and <literal>password</literal>
+                is in plain text this file should only be readable by root.</para>
+            <para>In order to update the corresponding <filename>sasl_password.db</filename> file
+                run  </para>
+            <para><command>$> postmap sasl_password</command></para>
+            <para>Finally we also need to restart (or reload) the postfix server</para>
+            <para><command>$> rcpostfix restart</command></para>
+            <note>
+                <para><emphasis role="bold">Postfix hash files.</emphasis></para>
+                <para>As you can see above the filename is prepended with a “hash:” prefix. This
+                    tells postfix not to use the file directly but a database version of the file.
+                    This is done for efficiency reason and if you look in the
+                        <filename>main.cf</filename> file you will indeed see that all text files
+                    are accessed as hash files. This has one complication. If you update the source
+                    text file the database file also have to be updated. To update the
+                        <filename>sasl_passwd.db</filename> database file from the source
+                        <filename>sasl_passwd</filename> the utility toll
+                        '<literal>postmap</literal>' is used: </para>
+                <para>Change into <filename>/etc/postfix</filename> directory and run </para>
+                <para><command>$> postmap sasl_passwd</command>
+                </para>
+                <para>This will create the <filename>sasl_passwd.db</filename> file that is used by
+                    postfix.</para>
+            </note>
+        </sect3>
+        <sect3>
+            <title>Verifying postfix SASL connection</title>
+            <para>Before moving on we should make sure that this works as we have intended. We can
+                do this in the same way as we tested the <acronym>IMAP</acronym> connection, by hand. This allows us to
+                see the core protocol level without any client getting in our way. </para>
+            <para>Unfortunately the <acronym>SMTP</acronym> protocol doesn't send the user/password combo as plain text
+                as we did in the <acronym>IMAP</acronym> protocol testing. Instead <acronym>SMTP</acronym> expects the user/password to be
+                base64 encoded together in one string. This can be manually constructed with the use
+                of a one line perl script as shown below</para>
+            <para>
+                <screen>$> perl -MMIME::Base64 -e 'print encode_base64("\000user\000userpasswd");'
+AHVzZXIAdXNlcnBhc3N3ZA==</screen>
+            </para>
+            <note>
+                <para>Strictly speaking (following the protocol) the username should be repeated so
+                    the really correct string would be </para>
+                <para>
+                    <screen>encode_base64("user\000user\000userpasswd")  </screen>
+                </para>
+                <para>but the simplified version will work. Another variant to do the base64
+                    encoding is to use the Unix command ‘<command>mmencode</command>’ which does
+                    Base64 encoding. This could be used as in </para>
+                <para>
+                    <screen>$> printf ‘\000user\000userpasswd’| mmencode  </screen>
+                </para>
+                <para>This is actually simpler then the Perl version but might not be available on
+                    all systems. ‘<command>mmencode</command>’ can also be used to decode base64
+                    encoded text.</para>
+            </note>
+            <para>where you replace the &lt;<literal>user</literal>> and
+                    &lt;<literal>userpasswd</literal>> placeholders as needed. It is then possible
+                to use the result above when using telnet to login to the <acronym>SMTP</acronym>
+                server and giving the <literal>AUTH PLAIN</literal> command.</para>
+            <screen>$> <emphasis role="bold">telnet localhost 25</emphasis>
+telnet localhost 25
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
+220 myserver.com ESMTP Postfix
+<emphasis role="bold">EHLO myserver.com</emphasis>
+250-myserver.com
+250-PIPELINING
+250-SIZE
+250-VRFY
+250-ETRN
+250-AUTH PLAIN
+250-AUTH=PLAIN
+250-ENHANCEDSTATUSCODES
+250-8BITMIME
+250 DSN
+<emphasis role="bold">AUTH PLAIN AHVzZXIAdXNlcnBhc3N3ZA==</emphasis>
+235 2.7.0 Authentication successful
+<emphasis role="bold">quit</emphasis>
+221 2.0.0 Bye
+Connection closed by foreign host.</screen>
+            <para>To make things clear the lines in bold face are the lines we entered. The rest of
+                the lines are the replies from the <acronym>SMTP</acronym> server. </para>
+            <para>Make sure that you can see the line <literal>250-AUTH PLAIN</literal> since this
+                is the line that indicates that the server accept authentication.</para>
+        </sect3>
+        <sect3>
+            <title>making an alias for root</title>
+            <para>We also want to have any system mail for root delivered to a “real” user. For this
+                we need to setup an alias for root. This is done by making sure that the file
+                    <filename>/etc/aliases</filename> has a line  </para>
+            <para>
+                <programlisting>root: &lt;user> </programlisting>
+            </para>
+            <para>where &lt;user> is a real existing user that will receive the root mails. After
+                you have updated this file you need to run the command
+                    “<command>newaliases</command>” which will produce the file
+                    <filename>alias.db</filename> based on the original alias file.</para>
+        </sect3>
+        <sect3>
+            <title>Rewriting sender addresses</title>
+            <para>If a mail is sent from the local user on a server that is not directly connected
+                to the internet it will have a domain name that in most cases are “fake”, for
+                example <email>joe@localhost.nil</email> (this will of course depend on what name
+                you have given the server). The problem with this is twofold. First the recipient
+                cannot answer to this address and secondly most mail servers requires that the
+                from-address is a valid (can be looked up in <acronym>DNS</acronym>) to forward the
+                mail at all. </para>
+            <para>To correct this situation <application>postfix</application> has the ability to
+                rewrite your “bad” addresses to something the recipient can actually answer to. In
+                fact, a lot of the complexity in postfix comes from the various ways of rewriting
+                addresses. Here we will just use the most basic rewrite functionality. For a fuller
+                (and very readable) discussion on the rewrite options in postfix consult the postfix
+                HowTo “<link xlink:href="http://www.postfix.org/ADDRESS_REWRITING_README.html"
+                    >Postfix Address Rewriting</link>” available on the postfix website. </para>
+            <para>This type of address rewriting is also known as address “masquerading” (for
+                obvious reasons). </para>
+            <para>In order to have postfix translate the “bad” mail address to a “good” address a
+                file with mappings between “bad” and “good” must be created. In this case we will
+                use a map/file called “sender_canonical”. For example, assuming that “joe” want all
+                his sent mail to look like it is coming from his GMail account
+                    <email>joe@gmail.com</email> we then add the following line to the
+                sender_canonical file</para>
+            <para>
+                <programlisting>joe     joe@gmail.com</programlisting>
+            </para>
+            <para>After this we need to run the <command>postmap</command> (to create the DB file)
+                and tell postfix to reload the configuration to make use of this new masquerading
+                as</para>
+            <para>
+                <screen>$> postmap sender_canonical
+$> postfix reload</screen>
+            </para>
+        </sect3>
+    </sect2>
+    <sect2>
+        <title>Setting up SSL/TLS for postfix</title>
+        <sect3>
+            <title>Installing certificates</title>
+            <para>As mentioned above we can use the same certificates we created for dovecot as long
+                as postfix is running on the same server as Dovecot (same IP address).  </para>
+            <para>The certificate and key we created for Dovecot were shown in <xref
+                    xlink:href="#tbl.dovecot-cert-key-files"/>. We must now tell postfix to enable
+                    <acronym>SSL/TLS</acronym> for incoming connections as well as point postfix to
+                those certificates that we want to use. </para>
+            <para>To do this we update <filename>main.cf</filename> as shown below</para>
+            <programlisting>smtpd_tls_security_level = may
+smtpd_tls_key_file = /etc/ssl/private/dovecot.pem
+smtpd_tls_cert_file = /etc/ssl/certs/dovecot.pem
+smtpd_tls_loglevel = 1
+tls_random_source = dev:/dev/urandom
+smtpd_tls_auth_only = yes</programlisting>            
+                <note>
+                <para>The above line</para>
+                    <para><code>smtpd_tls_security_level = may</code>
+                    </para>
+                    <para>replaces the older </para>
+                    <para><code>smtpd_use_tls = yes</code>
+                    </para>
+                    <para>and tells postfix to use <acronym>TLS</acronym>. </para>
+                    <para>For debugging purposes the loglevel can be increased to ‘2’. </para>
+                    <para>The final setting, <code>smtpd_tls_auth_only = yes</code>, forces the use
+                        of <acronym>TLS</acronym> for <acronym>SASL</acronym> authentication and
+                        will not allow plain text authentication to occur unless a
+                            <acronym>SSL/TLS</acronym> session has been established. (It may
+                        therefore be useful to comment out <code>smtpd_tls_auth_only = yes</code>
+                        during testing.)</para>
+                </note>
+            
+        </sect3>
+        <sect3>
+            <title>Accessing an encrypted server</title>
+            <para>Historically a separate port have been used for the encrypted version of the
+                    <acronym>SMTP</acronym> protocol when <acronym>SSL</acronym> was used. With
+                    <acronym>SSL</acronym> (and not TLS!) this is needed since the entire
+                conversation is encrypted so the server listening on the port has to use encryption
+                from the start. The only real user noticeable difference between
+                    <acronym>SSL</acronym> and <acronym>TLS</acronym> is that with the modern
+                    <acronym>TLS</acronym> it is possible to start the conversation non-encrypted
+                and as soon as both client and server has agreed to use encryption the rest of the
+                conversation is encrypted. One of the big advantages with <acronym>TLS</acronym> is
+                therefore that it is possible to use the same port for both encrypted and
+                non-encrypted traffic (as defined by <literal>RFC 3207</literal>) .</para>
+            <para>This means that we now have a choice on how we setup the actual access to the
+                server over the encrypted connections.</para>
+            <para>
+                <itemizedlist>
+                    <listitem>
+                        <para>Use a dedicated port (old way) with <acronym>SSL</acronym> or</para>
+                    </listitem>
+                    <listitem>
+                        <para>Use the same port with <acronym>TLS</acronym></para>
+                    </listitem>
+                </itemizedlist>
+            </para>
+            <para>For all modern installation it is strongly recommended to use the modern way with
+                the same port using <acronym>TLS</acronym>.</para>
+        </sect3>
+        <sect3>
+            <title>Using a dedicated port for encrypted traffic</title>
+            <para>Again, this is <emphasis role="bold">NOT</emphasis> the recommended way but is
+                included for completion. Unless you know that some clients only support this way you
+                should not implement this. </para>
+            <para>Originally port 465 was used as the separate <acronym>SSL</acronym> port for
+                encrypted <acronym>SMTP</acronym> or <acronym>SMTPS</acronym> (sometimes also
+                referred to as <acronym>SSMTP</acronym>). Unfortunately this port assignment was
+                never made official as far as <acronym>IANA</acronym> recognized port numbers go.
+                Instead it is registered for <acronym>URD</acronym> – “URL Rendesvous Directory for
+                SSM” by Cisco. </para>
+            <para>In addition the original intention of port 465 was to let <acronym>SMTP</acronym>
+                servers forward mail between each other over an encrypted channel. It was never
+                intended to be used by mail clients to talk to the server directly. For this purpose
+                another port was to be used, port 587 “Message submission” (see <literal>RFC
+                    2476</literal>). </para>
+            <para>So using this older setup an <acronym>SMTP</acronym> server was really supposed to be listening on
+                three ports. Port 25 for normal unencrypted traffic both from other servers and from
+                clients, port 465 to allow other servers to communicate and finally port 587 to
+                allow mail clients to submit new mails. </para>
+            <para>However, reality doesn't necessarily always match the theory. Most servers only
+                use two port, one for unencrypted and one for encrypted traffic. Even though
+                technically incorrect most servers use port 465 for <acronym>SMTPS</acronym> (both
+                from clients and other severs). </para>
+            <para>For a home based server (which does not have a DNS entry as a registered
+                    <acronym>MX</acronym> server connected directly to the internet as an official
+                mail server) it doesn't really matter if you choose the common (but incorrect) port
+                465 or port 587 as long as you configure your clients correctly on which port they
+                should use to send mails. The only thing you need to watch out for when using port
+                465 is that since this is not an officially assigned port for
+                    <acronym>SMTPS</acronym> one extra step is needed as described below. </para>
+            <para><emphasis role="bold">Using port 465 for encrypted <acronym>SMTP</acronym> traffic</emphasis>
+            </para>
+            <para>Since port 465 is not an officially recognized port for <acronym>SMTPS</acronym>
+                we must either update <filename>/etc/services</filename> (that is a file which lists
+                all officially recognized ports and gives symbolic names to them) to be able to use
+                the symbolic name “<literal>smtps</literal>” for the port in our
+                    <filename>master.cnf</filename> postfix or use the port number directly. </para>
+            <para>To use the symbolic name we must add the line </para>
+            <para>
+                <programlisting>smtps   465/tcp </programlisting>
+            </para>
+            <para>to <filename>/etc/services</filename> and remove any other service registered to
+                that port. The entry in <filename>/etc/services</filename> is only made to be able
+                to refer to the port number with a symbolic name. </para>
+            <para>The next step is to instruct postfix to listen on this port and enable the manger
+                process that handles the <acronym>TLS</acronym> connections for postfix. This is
+                done by editing <filename>master.cf</filename> and first removing the comment for
+                the following line:</para>
+            <para>
+                <programlisting>smtps    inet  n    -    n    -    -    <acronym>SMTPD</acronym> –o smtpd_tls_wrappermode=yes</programlisting>
+            </para>
+            <para>and then removing the comment for the line</para>
+            <para>
+                <programlisting>tlsmgr    unix    -    -    n    1000?    1 \  tlsmgr</programlisting>
+            </para>
+            <para>For these new settings to take place we now need to restart postfix</para>
+            <para><command>$> rcpostfix restart</command></para>
+            <para>
+                <tip>
+                    <para>As alternative you could skip the editing of
+                            <filename>/etc/services</filename> and just enter the numeric port
+                        number directly in <filename>master.cnf</filename> but this is a more
+                        “hackery” way of administer a server. It’s best to have all the services
+                        recognized on the server listed in
+                        <filename>/etc/services</filename>.</para>
+                </tip>
+            </para>
+            <para><emphasis role="bold">Using port 587 for encrypted <acronym>SMTP</acronym> traffic</emphasis></para>
+            <para>Since port 587 is an officially recognized port there is no need to update
+                    <filename>/etc/services</filename> . The only update needed is to remove the
+                comments in <filename>master.cnf</filename> for the two lines</para>
+            <para>
+                <programlisting>tlsmgr    unix    -    -    n    1000?    1   tlsmgr</programlisting>
+            </para>
+            <para>and</para>
+            <para>
+                <programlisting>submission inet n       -       n       -       -       smtpd</programlisting>
+            </para>
+            <para>This will enable the server to listen on port 587. </para>
+            <para>If you look in the <filename>master.cnf</filename> file you will also see that by
+                default some optional parameters are give directly on the command line. The
+                parameters are mirrors of the ones given in the <filename>main.cnf</filename> but
+                will take precedence. The command line parameters are useful when you need different
+                set of parameters for different ports. </para>
+            <para>Actually port 587 should really be used for submitting emails even if no
+                encryption is used. Unfortunately many commercial providers do not follow this
+                recognized standard and just assumes that both clients and other servers would
+                contact them on port 25. </para>
+            <para>If you want to use port 587 for submission with only optional encryption for those
+                client requesting this just remove the “<code>smtpd_tls_auth_only = yes</code>”
+                option and <acronym>SSL/TLS</acronym> encryption will be optional.</para>
+        </sect3>
+        <sect3>
+            <title>Using the same port for both encrypted and non-encrypted traffic</title>
+            <para>This is the recommended way for a modern secure <acronym>SMTP</acronym> server setup.</para>
+            <para>With this method no extra ports are needed. Instead the normal port 25 is used for
+                both encrypted and non encrypted traffic. When a client first connects to the server
+                it will notice the by the servers response that <acronym>TLS</acronym> is supported
+                (by the <literal>STARTTLS</literal> response code) and if the client is also capable
+                of <acronym>TLS</acronym> encryption it might then ask the server to continue the
+                rest of the conversation using <acronym>SSL/TLS</acronym> encryption.</para>
+            <para>To enable this method it suffices to enable the tlsmgr by uncommenting the
+                line</para>
+            <para>
+                <programlisting>tlsmgr    unix  -       -       n       1000?   1       tlsmgr</programlisting>
+            </para>
+            <para>in <filename>master.cnf</filename></para>
+            <para>This might seem contradictory to what we recommended in the previous paragraph
+                regarding the use of port 587. Technically you would be correct. The advantage is
+                that some poorly written clients will only support port 25. In addition keeping as
+                few ports open as possible is a good thing from a security point. </para>
+            <para>This is simply case where there simply is no single one correct answer. The
+                official standard stipulates one thing but years of de-facto standard shows
+                something else. Most (all?) <acronym>ISP</acronym> do not even allow incoming
+                traffic on port 587 (which they really should!) and many clients only support port
+                25 for unencrypted submission and port 465 for encrypted submission (which
+                technically is the wrong way of doing it).</para>
+        </sect3>
+        <sect3>
+            <title>Verifying the <acronym>SSL/TLS</acronym> setup when using a different <acronym>SSL</acronym> port</title>
+            <para>Finally we need to verify our setup. To verify that <acronym>SSL/TLS</acronym> is
+                enabled in postfix we start by open a plain <application>telnet</application>
+                session to postfix on the normal (non-secure) port 25</para>
+            <para>
+                <screen>$> <emphasis role="bold">telnet localhost 25</emphasis>
+telnet localhost 25
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
+220 myserver.com ESMTP Postfix
+<emphasis role="bold">EHLO myserver.com</emphasis>
+250-myserver.com
+250-PIPELINING
+250-SIZE
+250-VRFY
+250-ETRN
+250-STARTTLS
+250-ENHANCEDSTATUSCODES
+250-8BITMIME
+250 DSN
+<emphasis role="bold">quit</emphasis>
+221 2.0.0 Bye
+Connection closed by foreign host.</screen>
+            </para>
+            <para>The thing to notice above is the absence of <literal>AUTH PLAIN</literal> (since
+                we disabled that unless we had a secure connection which we don’t have since we
+                connected with telnet) and the addition of <literal>250-STARTTLS</literal> which
+                indicates that postfix is ready to accept a secure connection over
+                    <acronym>TLS</acronym>
+            </para>
+            <para>The rest of the section assumes that the server has been setup to listen on port
+                465 for secure connections. </para>
+            <para>The next step therefore is to verify the encrypted connection in the same way as
+                we did for the <acronym>IMAP</acronym> server using the “<command>openssl s_client</command>” command
+                (see <command>s_client(1)</command> for more details).</para>
+            <para>
+                <screen>$> openssl s_client –connect localhost:465</screen>
+            </para>
+            <para>This will first give you a long list of <acronym>SSL/TLS</acronym> details and in the end you will
+                see a line like</para>
+            <para>
+                <screen>220 smtp.myserver.com ESMTP Postfix</screen>
+            </para>
+            <para>You can then give the <literal>EHLO</literal> myserver.com command to see what
+                capabilities are supported and it should be the same as in the previous telnet
+                session but without the <literal>STARTTLS</literal> info line since we are already
+                in a <acronym>TLS</acronym> session but with the <literal>AUTH PLAIN</literal> (and
+                    <literal>AUTH=PLAIN</literal>) indicating that postfix is ready to accept an
+                incoming login. After this you should also try to login in the same way we did
+                without <acronym>SSL/TLS</acronym> (just remember the base64 encoding). </para>
+            <para>Once this is working you should try to access the <acronym>SMTP</acronym> server using the full IP
+                address or hostname, for example as</para>
+            <para>
+                <screen>$> openssl s_client –connect 192.168.0.50:465</screen>
+            </para>
+            <para>It is possible that this will fail. In that case it most certainly is caused by
+                you having the following line</para>
+                <programlisting>inet_interfaces = localhost</programlisting>            
+            <para>In <filename>main.cf</filename> . This line tells postfix to only accept incoming
+                connection only to localhost and not the IP address. Recall that the network card
+                can be accessed with (at least) two IP addresses first the loopback address
+                    <literal>127.0.0.1</literal> (or localhost) and then the assigned IP address (in
+                our case <literal>192.168.0.50</literal>). Either remove the line completely or add
+                the IP address of the host to the line, i.e. in this case. As a general rule you
+                should try to clean up your postfix configuration file to only contain settings you
+                have made yourself and then comment them heavily, (the shorter the configuration
+                file is the easier it is to understand). </para>
+            <para>To fix this you could remove the line or add the IP address of the server
+                as</para>
+                <programlisting>inet_interfaces = localhost, 192.168.50</programlisting>            
+            <para>(Leaving <literal>inet_interfaces</literal> empty or setting it to “all” will
+                accept connection on all defined interfaces on this machine.) With the above use of
+                    <acronym>openssl</acronym> s_client you will get a certificate warning that
+                    <acronym>openssl</acronym> can not verify the root certificate. This is to be
+                expected since we have not told <acronym>openssl</acronym> what root certificate we
+                trust. In our case this warning is harmless but to avoid this warning add the
+                parameter <code>-CAfile &lt;/path/to/rootcert/ca.crt></code>
+            </para>
+            <para>If you have followed the previous recommended <application>Apache</application>
+                setup then one place to find our root certificate is </para>
+            <para>
+                <screen>$> openssl s_client -CAfile /etc/apache2/ssl.crt/ca.crt –connect 192.168.0.50:465 </screen>
+            </para>
+        </sect3>
+        <sect3>
+            <title>Verifying the <acronym>SSL/TLS</acronym> setup when using one port for both encrypted and
+                non-encrypted traffic</title>
+            <para>This also requires the use of the <acronym>openssl</acronym> with the s_client command. </para>
+            <para>However since the connection starts out non-encrypted and must be enabled by
+                following the <acronym>SMTP</acronym> protocol we must add an extra option 
+                <option>-starttls smtp</option> to tell <acronym>openssl</acronym> to obey the <acronym>SMTP</acronym> protocol as  </para>
+            <para>
+                <screen>$> openssl s_client -starttls smtp -connect 192.168.0.50:25 </screen>
+            </para>
+            <para>The rest of the tests can be done in the same way as in the previous
+                section.</para>
+            <para>
+                <tip>
+                    <para>For more complex testing of <acronym>SMTP</acronym> transaction we
+                        recommend the program “<application>swaks</application>” which stands for
+                            <emphasis role="italic">Swiss Army Knife SMTP</emphasis>. This is a
+                        scriptable tool which simplifies complex <acronym>SMTP</acronym> testing
+                            <acronym>SMTP</acronym> including
+                            <acronym>SSL</acronym>/<acronym>TLS</acronym>. See
+                            <uri>http://www.jetmore.org/john/code/swaks/</uri>
+                    </para>
+                </tip>
+            </para>
+        </sect3>
+    </sect2>
+    <sect2>
+        <title>Enabling postfix at boot time</title>
+        <para>Finally to have postfix start automatically when the server is started we use the
+                '<command>chkconfig</command>' command</para>
+        <para>
+            <screen>$> chkconfig –add postfix</screen>
+        </para>
+    </sect2>
+    
+</sect1>

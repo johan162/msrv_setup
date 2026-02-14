@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>C.2 Synchronizing (or backing up) two IMAP servers</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49685504"/>C.2 Synchronizing (or backing up) two IMAP servers</h1></div></div></div>
+        
+        <p>If you have two <acronym class="acronym">IMAP</acronym> server setups and you want to synchronize them
+            you can use the <span class="command"><strong>dsync</strong></span> command (which belongs to
+                <span class="application">Dovecot</span>) this can either be used to make a complete
+            backup of a <acronym class="acronym">IMAP</acronym> server and it can also be used to synchronize
+            between two <acronym class="acronym">IMAP</acronym> servers.</p>
+        <p><span class="bold"><strong>Example 1. Making a complete backup to a remote
+                server</strong></span></p>
+        <p>Make sure that the user exists on the remote server and then make sure that the
+            destination is empty the first time you run the backup command to avoid any conflicts.
+            Assuming the user is “<code class="literal">joe</code>” and the remote server is located at IP
+            address <code class="literal">192.168.0.51</code>. </p>
+        <p>Login as <code class="literal">root</code> (on this server, the source) and then give the
+            following command </p>
+        <pre class="screen">$&gt;  dsync –u joe –v backup root@192.168.0.51 -u joe</pre>
+        <p>Dsync will now use ssh to login to the remote server and copy all the mails from this
+            server onto the remote server for this user.</p>
+        <p><span class="bold"><strong>Example 2. Synchronizing between two servers</strong></span></p>
+        <p>The difference between backup and synchronization is that any changes in the remote
+            server will also be reflected back in the source server. Assuming the same user and
+            server as In the previous example this is now done by as so</p>
+        <pre class="screen">$&gt;  dsync –u joe –v mirror root@192.168.0.51 -u joe</pre>
+    </div></body></html>

@@ -1,0 +1,339 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>The Complete OpenSuSE Mail Server</title><meta name="generator" content="DocBook XSL Stylesheets V1.77.1"/><link rel="home" href="oxygen-main.html" title="The Complete OpenSuSE Mail Server"/><link rel="next" href="ar01s02.html" title="Overview of the components"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><link rel="stylesheet" type="text/css" href="oxygen-webhelp/resources/css/webhelp_topic.css"/>                           <link rel="stylesheet" type="text/css" href="oxygen-webhelp/resources/css/comments.css"/>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/jquery.js"> </script>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/jquery-ui.custom.min.js"> </script>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/frames_redirect.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/localization/strings.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/comments-functions.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/php/cnf.php"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/init.js"> </script>                                        <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/localization/strings.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/comments-functions.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/php/cnf.php"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/init.js"> </script>
+<script type="text/javascript"><!--
+    var prefix = "oxygen-main";
+    var ratingFile = "";
+    redirectToToc(window.location.search);
+    function highlightSearchTerm(){
+        if(parent.termsToHighlight != null){
+        // highlight each term in the content view  
+          for(i = 0 ; i < parent.termsToHighlight.length ; i++){        
+              $('*', window.parent.contentwin.document).highlight(parent.termsToHighlight[i]);
+          }
+        }
+    }
+//--></script>
+</head><body onload="highlightSearchTerm()"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">The Complete OpenSuSE Mail Server</th></tr><tr><td width="20%" align="left"> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s02.html">Next</a></td></tr></table><hr/></div><span class="frames"><script type="text/javascript"><!--                    
+									 if (top === self) { 
+							        document.write("<div class='wFrames'><a href=" + getPath(location.pathname) + ">With Frames</a></div>");							
+						        } else {
+						          //document.write("<div class='wFramesPerma'><a href=" + getPath(location.pathname) + " target='_top' title='link to this page'>Link</a></div>");						
+						        }       
+                  --></script></span>
+<div class="article" id="d5e1"><div class="titlepage"><div><div><h1 class="title">The Complete OpenSuSE Mail Server</h1></div><div><h3 class="subtitle"><em>... or how  to really understand a full IMAP/SMTP/HTTPS/Webmail setup</em></h3></div><div><div class="author"><h3 class="author">Johan Persson</h3><code class="email">&lt;<a class="email" href="mailto:johan162@gmail.com">johan162@gmail.com</a>&gt;</code></div></div><div><p class="releaseinfo">Version 0.1</p></div><div><p class="copyright">Copyright © 2011 Johan Persson</p></div></div><hr/></div><div class="toc"><p><strong>Table of Contents</strong></p><dl><dt><span class="sect1"><a href="oxygen-main.html#d5e12">Introduction</a></span></dt><dd><dl><dt><span class="sect2"><a href="oxygen-main.html#d5e32">Why another mail tutorial?</a></span></dt><dt><span class="sect2"><a href="oxygen-main.html#section.prereq">Applicable OpenSuSE versions and pre-requisites</a></span></dt><dt><span class="sect2"><a href="oxygen-main.html#d5e173">Typographical conventions used in this tutorial</a></span></dt><dt><span class="sect2"><a href="oxygen-main.html#d5e240">About this document</a></span></dt></dl></dd><dt><span class="sect1"><a href="ar01s02.html">Overview of the components</a></span></dt><dd><dl><dt><span class="sect2"><a href="ar01s02.html#d5e325">Postfix</a></span></dt><dt><span class="sect2"><a href="ar01s02.html#d5e391">Dovecot</a></span></dt><dt><span class="sect2"><a href="ar01s02.html#d5e434">Fetchmail</a></span></dt><dt><span class="sect2"><a href="ar01s02.html#d5e461">Procmail</a></span></dt><dt><span class="sect2"><a href="ar01s02.html#d5e483">Roundcube (and Apache)</a></span></dt><dt><span class="sect2"><a href="ar01s02.html#d5e511">openssl</a></span></dt><dt><span class="sect2"><a href="ar01s02.html#d5e515">spamassassin</a></span></dt></dl></dd><dt><span class="sect1"><a href="ar01s03.html">The setup process</a></span></dt><dd><dl><dt><span class="sect2"><a href="ar01s03.html#d5e583">Some ports and acronyms used</a></span></dt><dt><span class="sect2"><a href="ar01s03.html#d5e743">Using SSL/TLS certificates</a></span></dt></dl></dd><dt><span class="sect1"><a href="ar01s04.html">Setting up Apache http-server</a></span></dt><dd><dl><dt><span class="sect2"><a href="ar01s04.html#d5e935">Creating self-signed SSL/TLS certificate for Apache</a></span></dt><dt><span class="sect2"><a href="ar01s04.html#d5e998"> Enabling SSL in the OpenSuSE configuration</a></span></dt><dt><span class="sect2"><a href="ar01s04.html#d5e1025">Setting up a virtual host for HTTPS</a></span></dt><dt><span class="sect2"><a href="ar01s04.html#d5e1078">Restarting and enabling Apache</a></span></dt></dl></dd><dt><span class="sect1"><a href="chap.dovecot.html">Setting up Dovecot</a></span></dt><dd><dl><dt><span class="sect2"><a href="chap.dovecot.html#d5e1123"> Modifying dovecot configuration files</a></span></dt><dt><span class="sect2"><a href="chap.dovecot.html#d5e1228"> Creating dovecot SSL/TLS certificates</a></span></dt><dt><span class="sect2"><a href="chap.dovecot.html#d5e1281">Testing the dovecot configuration</a></span></dt><dt><span class="sect2"><a href="chap.dovecot.html#d5e1310">Verifying the encrypted IMAP connection</a></span></dt><dt><span class="sect2"><a href="chap.dovecot.html#d5e1319">Troubleshooting Dovecot</a></span></dt><dt><span class="sect2"><a href="chap.dovecot.html#d5e1329">Adding a full text index</a></span></dt></dl></dd><dt><span class="sect1"><a href="ar01s06.html">Setting up postfix</a></span></dt><dd><dl><dt><span class="sect2"><a href="ar01s06.html#d5e1364">User authentication in postfix</a></span></dt><dt><span class="sect2"><a href="ar01s06.html#d5e1516">Setting up SSL/TLS for postfix</a></span></dt><dt><span class="sect2"><a href="ar01s06.html#d5e1728">Enabling postfix at boot time</a></span></dt></dl></dd><dt><span class="sect1"><a href="ar01s07.html">Setting up fetchmail</a></span></dt><dd><dl><dt><span class="sect2"><a href="ar01s07.html#d5e1748">Configuring fetchmail</a></span></dt><dt><span class="sect2"><a href="ar01s07.html#d5e1801">Starting and enabling fetchmail at boot time</a></span></dt></dl></dd><dt><span class="sect1"><a href="ar01s08.html">Setting up spamassassin</a></span></dt><dd><dl><dt><span class="sect2"><a href="ar01s08.html#d5e1846">Configuring spamassassin Bayes auto learning</a></span></dt><dt><span class="sect2"><a href="ar01s08.html#d5e1860">Verifying spamassassin</a></span></dt></dl></dd><dt><span class="sect1"><a href="ar01s09.html">Setting up procmail</a></span></dt><dd><dl><dt><span class="sect2"><a href="ar01s09.html#d5e1927">Configuration file</a></span></dt></dl></dd><dt><span class="sect1"><a href="ar01s10.html">Setting up Roundcube</a></span></dt><dt><span class="sect1"><a href="ar01s11.html">Where to find more information</a></span></dt><dd><dl><dt><span class="sect2"><a href="ar01s11.html#d5e2128">On the usage of SuSE Yast tool</a></span></dt><dt><span class="sect2"><a href="ar01s11.html#d5e2134">References</a></span></dt></dl></dd><dt><span class="appendix"><a href="appendix.postfix-examples.html">A. Postfix configuration examples</a></span></dt><dd><dl><dt><span class="sect1"><a href="appendix.postfix-examples.html#d5e2147">Example 1</a></span></dt><dt><span class="sect1"><a href="apas02.html">Example 2</a></span></dt><dt><span class="sect1"><a href="apas03.html">Example 3</a></span></dt><dt><span class="sect1"><a href="apas04.html">Example 4</a></span></dt></dl></dd><dt><span class="appendix"><a href="appendix.procmail.html">B. Procmail recipes</a></span></dt><dd><dl><dt><span class="sect1"><a href="appendix.procmail.html#d5e2190"> The problem of filtering on the “Subject:” field</a></span></dt><dt><span class="sect1"><a href="apbs02.html">How to create filter that matches on any of several rules (creating an “OR”
+            rule)</a></span></dt><dt><span class="sect1"><a href="apbs03.html">Out of office</a></span></dt><dt><span class="sect1"><a href="apbs04.html">Replying with a mail based on subject</a></span></dt><dt><span class="sect1"><a href="apbs05.html">Calling an arbitrary external program</a></span></dt><dt><span class="sect1"><a href="apbs06.html">A template to start with</a></span></dt></dl></dd><dt><span class="appendix"><a href="appendix.dovecot.html">C. Dovecot tips and tricks</a></span></dt><dd><dl><dt><span class="sect1"><a href="appendix.dovecot.html#d5e2273">Automatic expunging of old mails</a></span></dt><dt><span class="sect1"><a href="apcs02.html">Synchronizing (or backing up) two IMAP servers</a></span></dt></dl></dd><dt><span class="appendix"><a href="appendix.postfix.html">D. Postfix configuration</a></span></dt><dd><dl><dt><span class="sect1"><a href="appendix.postfix.html#d5e2333">main.cf</a></span></dt><dt><span class="sect1"><a href="apds02.html">master.cf</a></span></dt></dl></dd><dt><span class="appendix"><a href="appendix.openssl.html">E. Create SSL/TLS keys and certificates with openssl</a></span></dt><dd><dl><dt><span class="sect1"><a href="appendix.openssl.html#d5e2410">The use of the term “self-signed certificates”</a></span></dt><dt><span class="sect1"><a href="apes02.html">Preparations</a></span></dt><dt><span class="sect1"><a href="apes03.html">Generating the CA key-pair</a></span></dt><dt><span class="sect1"><a href="apes04.html">Generating the Apache HTTPS key-pair</a></span></dt><dt><span class="sect1"><a href="apes05.html">Generating the Dovecot/postfix key-pair</a></span></dt><dt><span class="sect1"><a href="apes06.html">Generating a certificate with multiple common names</a></span></dt><dt><span class="sect1"><a href="apes07.html">Keeping both the certificate and key in the same file</a></span></dt><dt><span class="sect1"><a href="apes08.html">Converting to other certificate formats</a></span></dt><dd><dl><dt><span class="sect2"><a href="apes08.html#d5e2594">DER format</a></span></dt><dt><span class="sect2"><a href="apes08.html#d5e2603">PKCS #12 format</a></span></dt></dl></dd><dt><span class="sect1"><a href="apes09.html">Certification Revocation List (CRL) and OCSP</a></span></dt><dt><span class="sect1"><a href="apes10.html">Summary</a></span></dt><dd><dl><dt><span class="sect2"><a href="apes10.html#d5e2650">Creating the CA (root certificate)</a></span></dt><dt><span class="sect2"><a href="apes10.html#d5e2655">Creating the Apache HTTPS certificate</a></span></dt><dt><span class="sect2"><a href="apes10.html#d5e2660">Creating the mail certificate</a></span></dt></dl></dd></dl></dd><dt><span class="appendix"><a href="appendix.apache.html">F. Apache virtual host example configuration</a></span></dt><dd><dl><dt><span class="sect1"><a href="appendix.apache.html#d5e2674">ssl-vhost.conf</a></span></dt></dl></dd></dl></div><div class="sect1" id="d5e12"><div class="titlepage"><div><div><h2 class="title" style="clear: both">Introduction</h2></div></div></div><p>With the almost ubiquitous presence of mobile devices it becomes crucial to be able to
+        access mail from any device anywhere and still read and manipulate the same mails regardless
+        of which device is used. The easiest way to achieve this with close to zero setup effort is
+        to use a public mail provider, for example GMail, Hotmail etc. </p><p>However for users that require more fine grained control over message handling a public
+        mail provider might not be a viable option. Reasons that might require such a setup includes
+        but are not limited to:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>need for automatic processing of messages with external programs at message
+                arrival (such as automatic replies depending on message content or perform other
+                pre-defined actions such as scannig messages for viruses)</p></li><li class="listitem"><p>control over mail backup</p></li><li class="listitem"><p>collection of mails from several accounts into one master repository</p></li><li class="listitem"><p>unable to comply with the license of the public mail provider</p></li><li class="listitem"><p>need for an ad-free mail client</p></li><li class="listitem"><p>needs mail to be sent from a specific domain</p></li><li class="listitem"><p>privacy concerns</p></li></ul></div><p>The rest of this tutorial will be spent going through, in details, how to make such a
+        setup based on a OpenSuSE Linux/GNU distribution.</p><div class="sect2" id="d5e32"><div class="titlepage"><div><div><h3 class="title">Why another mail tutorial?</h3></div></div></div><p>There is no shortage of various notes and tutorials trying to show how to do a server
+            setup like this. Our experience is however that many of them, while working (in some
+            respect), have one or more misunderstandings or present obsoleted knowledge based on old
+            ways of doing things. In many cases recommendations are handed down from older tutorial
+            and seen as truth - because they work - but are incomplete or in worst case have been
+            deprecated since long. </p><p>This tutorial, while substantially longer, aims at describing a correct and modern
+            setup as well as how it works and how the components interact. Many misunderstanding
+            stem from a poor grasp of the overall picture on how these component fits together. It
+            is our belief that in order to configure a working setup one must understand what one is
+            doing. Just taking random bits of code from "the net" might give, by sheer luck, a
+            working setup but it might as likely have created an open relay for spammers to use
+            (which is very bad).</p><p>Especially the <acronym class="acronym">SSL/TLS</acronym> setup using <acronym class="acronym">openssl</acronym> will
+            be covered and explained in more details than usual in descriptions like this since much
+            information available on "the net" is just plain wrong or at best shows very, very,
+            antiquated ways of configuring a <acronym class="acronym">SSL/TLS</acronym> setup. </p><p><span class="bold"><strong>Goals with this tutorial</strong></span></p><p>The setup we will describe in this tutorial will allow any device capable of
+                <acronym class="acronym">IMAP</acronym> message handling (all modern devices do) to connect and
+            synchronize mails from a central repository meaning that any change from any device will
+            be visible to all other devices. The setup will also allow clients to send mails through
+            this server (acting as an <acronym class="acronym">SMTPD</acronym> server). </p><p>The setup assumes a "home server" which is not directly connected to the internet and
+            configured as an official mail server for some domain. This also implies the need to
+            relay mails to be sent through a “real” mail server (most likely an
+                <acronym class="acronym">ISP</acronym>s server) that is properly connected to the internet. An
+            overview of the principle of our setup and all constituting parts are shown in <a class="xref" href="ar01s02.html#fig.mail-overview" title="Figure 2. Mail server overview">Figure 2, “Mail server overview”</a>.</p><p>The goal of this tutorial is therefore to describe, in a very detailed way, how to
+            setup an OpenSuSE server to both act as an <acronym class="acronym">IMAP</acronym> and <acronym class="acronym">SMTP</acronym> server. In addition it will use
+            encrypted communication using a <acronym class="acronym">SSL/TLS</acronym> setup based on the <code class="code">openssl</code> library.
+            This will allow secure mail access from any device (e.g. SmartPhones, Ipads, laptops
+            etc.) using either the device's built-in mail client or optionally connected to our web
+            based mail client. </p></div><div class="sect2" id="section.prereq"><div class="titlepage"><div><div><h3 class="title">Applicable OpenSuSE versions and pre-requisites</h3></div></div></div><p>Much of the information here is generic and not specific to OpenSuSE. However,
+            location and structure of specific configuration files are distribution dependent. This
+            document has been verified on OpenSuSE 11.4 as well as 12.1. Most ofthe details given in
+            this tutorial should also be valid on older 11.x OpenSuSE releases. OpenSuSE resembles
+            the RedHat distribution in some respect but has enough differences of its own to not
+            make it directly compatible. Other systems (for example Ubuntu) uses a rather different
+            setup structure so while the principles still apply the details will not match.</p><p>One main difference noticeable between 11.4 and 12.1 is that in 12.1 the older SySV
+            init file handling has been replaced with the more modern <code class="literal">systemd</code>
+            init file handling. This has several advantages such as parallelizing startup scripts
+            (hence reducing boot time). Fortunately there is a compatibility layer so that old
+                <code class="filename">/etc/init.d/</code> startup scripts will work as
+            usual and redirect the start/stop commands to <code class="literal">systemd</code> (see <a class="link" href="http://news.opensuse.org/2011/12/22/systemd-%E2%80%93-boot-faster-and-cleaner-with-opensuse-12-1/" target="_top">systemd – boot faster and cleaner</a>)</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/usr/local/share/oxygen14.0/frameworks/docbook/xsl/images/tip.png"/></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p>When installing OpenSuSE chose the desktop as "<span class="italic">Minimal
+                    Server Selection (Text Mode)</span>" as illustrated in <a class="xref" href="oxygen-main.html#fig.suse-text-server" title="Figure 1. Chosing text server when installing OpenSuSE">Figure 1, “Chosing text server when installing OpenSuSE”</a>. Note that in order to get to this screen
+                the installation must be run in manual mode and not automatic.</p><p>
+                </p><div class="figure" id="fig.suse-text-server"><p class="title"><strong>Figure 1. Chosing text server when installing OpenSuSE</strong></p><div class="figure-contents"><div class="mediaobject"><img src="figures/suse-text-server.png" width="432" alt="Chosing text server when installing OpenSuSE"/></div></div></div><p><br class="figure-break"/>
+                </p></td></tr></table></div><div class="sect3" id="d5e73"><div class="titlepage"><div><div><h4 class="title">Installed components</h4></div></div></div><p>We will assume that all the components listed below are installed on the server. They
+            are all available (with one exception as noted below) from the standard OpenSuSE
+            repository as packages. For now it is enought if these components are installed but not
+            configures - this is what the rest of this tutorial is all about. All these components
+            can be installed from the Yast2 package manager as listed below (the "core packages"
+            indicates the minimum needed packages.)</p><p>
+            </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><span class="bold"><strong>Apache v2.x</strong></span> - <acronym class="acronym">HTTP</acronym>
+                        server (will be referred to as only Apache in the rest of the
+                        document).</p><p>Core packages: <code class="literal">apache2</code>,
+                            <code class="literal">apache2-prefork</code>, <code class="literal">apache2-utils</code>,
+                            <code class="literal">libapr-util1</code>, <code class="literal">libapr1</code></p></li><li class="listitem"><p><span class="bold"><strong>PHP5</strong></span> - With at least the modules
+                            <code class="code">php5-curl</code>, <code class="code">php5-openssl</code> and
+                            <code class="code">php5-sockets</code> installed</p><p>Core packages: <code class="literal">apache2-mod_php5</code>,
+                            <code class="literal">php5-mysql</code>,<code class="literal">php5-curl</code>,
+                            <code class="literal">php5-openssl</code>, <code class="literal">php5-sockets</code></p></li><li class="listitem"><p><span class="bold"><strong>Postfix</strong></span> - Mail daemon used to receive and
+                        send mails. </p><p><span class="italic"><span class="bold"><strong>Note:</strong></span> The default
+                            mail daemon (<acronym class="acronym">MTA</acronym>) in OpenSuSE 12.1 has changed to
+                                <code class="literal">exim</code> if a full KDE/X-Windows installation is
+                            done.  This means installing postfix might trigger a warning that it
+                            conflicts with <code class="literal">exim</code> and that it will be un-installed.
+                            Just answer yes in that case. In case you install the default text
+                            server postfix will already have been installed.</span></p><p>Core packages: <code class="literal">postfix</code></p></li><li class="listitem"><p><span class="bold"><strong>Fetchmail</strong></span> - Used to fetch messages from
+                        other mail accounts</p><p>Core packages: <code class="literal">fetchmail</code></p></li><li class="listitem"><p><span class="bold"><strong>Dovecot v2.x</strong></span> - <acronym class="acronym">IMAP</acronym>
+                        server that allows access to your stored mails. </p><p><span class="bold"><strong>Note:</strong></span> Makes sure that Dovecot 2.x is
+                        installed and not Dovecot 1.x. OpenSuSE by default installs the older
+                        version 1.x of Dovecot. Dovecot 2.x is available in the OpenSuSE
+                        repositories (as dovecot2). We will simple refer to this as Dovecot.</p><p>Core packages: <code class="literal">dovecot20</code></p></li><li class="listitem"><p><span class="bold"><strong>MySQL</strong></span> - Database server (needed for the
+                            <span class="application">Roundcube</span> webmailer)</p><p>Core packages: <code class="literal">mysql-community-server</code>,
+                            <code class="literal">mysql-community-server-client</code>
+                    </p></li><li class="listitem"><p><span class="bold"><strong>Procmail</strong></span> - Used for rule based mail
+                        filtering which will allow things like sorting mails into folders depending
+                        on there content or do other types of automatic processing based on the
+                        content of the messages.</p><p>Core packages: <code class="literal">procmail</code></p></li><li class="listitem"><p><span class="bold"><strong>Spamassassin</strong></span> - Tool to help identify junk
+                        mails (spam)</p><p>Core packages: <code class="literal">spamassassin</code>,
+                            <code class="literal">perl-Mail-Spamassassin</code></p></li><li class="listitem"><p><span class="bold"><strong>openssl</strong></span> - Tool to handle encryption and
+                        creation of certificates (this package is installed by default in the
+                        Minimal Server Selection)</p><p>Core packages: <code class="literal">openssl</code></p></li></ul></div><p>
+        </p><p>
+            </p><div class="caution" style="margin-left: 0.5in; margin-right: 0.5in;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="/usr/local/share/oxygen14.0/frameworks/docbook/xsl/images/caution.png"/></td><th align="left">Caution</th></tr><tr><td align="left" valign="top"><p>Please make absolutely sure that all of the above components are installed
+                    before proceeding!</p><p>All necessary component can be installed by running the following command as
+                    root</p><pre class="screen">$&gt; zypper in apache2 apache2-prefork apache2-mod_php5 php5-curl \
+php5-openssl php5-sockets postfix fetchmail dovecot20 procmail \
+mysql-community-server mysql-community-server-client \
+spamassassin perl-Mail-Spamassassin
+                </pre></td></tr></table></div><p>
+        </p><p>There is also one final package that strictly speaking is not necessary but that we
+            strongly recommend. This is to install a Web-based mail client. Having a web-based mail
+            setup has the advantage that it will allow safe and secure access (using https://) to
+            mails from any networked computer in the world. In this tutorial we will use "<span class="bold"><strong>Roundcube</strong></span>" (<a class="link" href="http://roundcube.net/" target="_top">http://roundcube.net/</a>). </p><p>The application style of the modern (and <acronym class="acronym">AJAX</acronym> based) Roundcube also
+            makes it a compelling alternative even to native mail clients such as KMail. Roundcube
+            is not as of this writing available as a package for OpenSuSE. However as a
+            Web-applications it is straightforward to install and set it up using the included
+            installer.</p></div><div class="sect3" id="d5e157"><div class="titlepage"><div><div><h4 class="title">What level of experience is needed and how long will it take?</h4></div></div></div><p>A certain maturity with Linux is assumed but mostly the ability (and willingness) to
+            lookout for details is what matters. As in a mathematical proof every single detail
+            counts. There are literally hundreds of pages in the manuals for all the components we
+            touch upon here so the details described here are only the details that really matters -
+            the <span class="italic">need to know details</span>.</p><p>Setting up a complete <acronym class="acronym">IMAP</acronym>/<acronym class="acronym">SMTP</acronym> server correctly
+            the first time requires an eye for details. Even experienced administrators will make
+            mistakes. The main advantage with experience is that debugging various issues gets
+            faster since likely problem spots are known by experience. </p><p>The setup of a working server will likely take several hours rather than minutes. So
+            patience is needed as well as careful reading with a willingness to go back and double
+            check everything at least three times! </p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/usr/local/share/oxygen14.0/frameworks/docbook/xsl/images/tip.png"/></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p>We strongly encourage to install the server in a <span class="bold"><strong>virtual
+                        machine installation</strong></span> (for example using
+                        <span class="application">VirtualBox</span>) since that will easily allow going
+                    back to a known pristine state in case of "unrecoverable error". Compare this
+                    with having to re-install a physical  server since one is not sure after a while
+                    which of all the settings that were changed was wrong.</p><p>Once a working server in a virtual machine is established it is also easy to
+                    move the virtual server, for example to a new server when the hardware is
+                    upgraded. This allows an easy upgrade path to future OpenSuSE version as well
+                    without having to reconfigure a complete mail server at each upgrade. When in
+                    the future OpenSuSE v13.1, v14.1, etc. comes out there is nothing that prevents
+                    running a virtual mail server based on 11.4 or 12.1. The core protocols of the
+                    internet are not very likely to have changed dramatically even by then so the
+                    virtual server will still be valid.</p><p>OpenSuSE has pre-built packages for <span class="application">VirtualBox</span>
+                    which makes it straight forward to install. </p><p>The only minimal drawback with a virtual server is the need to reserver some
+                    RAM memory. However, given that it is perfectly fine to run a complete mail
+                    setup on 512MB (or less) this should be considered a small price to pay for the
+                    flexibility it will give. </p></td></tr></table></div></div></div><div class="sect2" id="d5e173"><div class="titlepage"><div><div><h3 class="title">Typographical conventions used in this tutorial</h3></div></div></div><p>For special elements like configuration settings, commands, screen input/output etc.
+            the convention shown in <a class="xref" href="oxygen-main.html#tbl.typographic" title="Table 1. Typographic conventions">Table 1, “Typographic conventions”</a> are used in this
+            tutorial.</p><div class="table" id="tbl.typographic"><p class="title"><strong>Table 1. Typographic conventions</strong></p><div class="table-contents"><table summary="Typographic conventions" border="1"><colgroup><col class="c1"/><col class="c2"/></colgroup><thead><tr><th>Element</th><th>Display</th></tr></thead><tbody><tr><td>
+                            <p>File name</p>
+                        </td><td>
+                            <p><code class="filename">/etc/fetchmailrc</code></p>
+                        </td></tr><tr><td>
+                            <p>Directory name</p>
+                        </td><td>
+                            <p><code class="filename">/etc</code></p>
+                        </td></tr><tr><td>
+                            <p>Screen input/output</p>
+                        </td><td>
+                            <p>
+                                </p><pre class="screen">$&gt; /etc/init.d/apache2 start</pre><p>
+                            </p>
+                            <p><span class="italic"><span class="bold"><strong>Note:</strong></span>
+                                    Screen output anf listings may have additional line breaks
+                                    indicated by a '\' character at the end of the line. Such line
+                                    breaks should not be entered in the files or in the command
+                                    sequences. </span></p>
+                        </td></tr><tr><td>
+                            <p>Configuration file</p>
+                        </td><td>
+                            <pre class="programlisting">poll remotemail.com proto pop3 user "joe" there \ 
+with password "secret"  is "joe" here;</pre>
+                        </td></tr><tr><td>
+                            <p>Commands in text</p>
+                        </td><td>
+                            <p>Execute <span class="command"><strong>fetchmail</strong></span> once ...</p>
+                        </td></tr><tr><td>
+                            <p>Acronyms in text</p>
+                        </td><td>
+                            <p>The well known <acronym class="acronym">openssl</acronym> library which supports
+                                    <acronym class="acronym">SSL/TLS</acronym> ...</p>
+                        </td></tr><tr><td>
+                            <p>Literal names in text</p>
+                        </td><td>
+                            <p>The <code class="literal">antispam 501</code> line is used ...</p>
+                        </td></tr><tr><td>
+                            <p>Application name</p>
+                        </td><td>
+                            <p>The <span class="application">Roundcube</span> mailer ...</p>
+                        </td></tr></tbody></table></div></div><br class="table-break"/><p>In some cases the same name is used as either a command or as the name of an
+            application. The context will determine if the name is used as a noun (name of
+            application) or as verb (command).</p><p>The choice of formatting should also work well for the ~8% of the general population
+            that suffer from color vision perception challenge (aka "color blindness") due to the
+            use of both color and font change. </p></div><div class="sect2" id="d5e240"><div class="titlepage"><div><div><h3 class="title">About this document</h3></div></div></div><p>This tutorial was written in plain text format (<acronym class="acronym">UTF-8</acronym> encoding)
+            using the <span class="bold"><strong>DocBook XML markup</strong></span>. To render the styled
+            output from the XML sources the <span class="bold"><strong>DocBook 1.76.1 XSL</strong></span>
+            stylesheets was used together with the <span class="command"><strong>xsltproc</strong></span>
+            <acronym class="acronym">XSLT</acronym> processor</p><p>To produce the <acronym class="acronym">PDF</acronym> output the<span class="bold"><strong> DocBook
+                XML</strong></span> were first transformed into an <acronym class="acronym">FO</acronym> format which was
+            then rendered with the Apache <acronym class="acronym">FOP</acronym> processor into the final
+                <acronym class="acronym">PDF</acronym> format. In order to get the current look and feel of the
+            document a customized <acronym class="acronym">XSL</acronym> stylesheet was used. To style the
+                <acronym class="acronym">HTML</acronym> output both a custom <acronym class="acronym">HTML</acronym>
+            <acronym class="acronym">XSL</acronym> stylesheet and a <acronym class="acronym">CSS</acronym> stylesheet was
+            used.</p><p>As source editor <span class="application">oXygen XML editor</span> was used and the
+            transform process into <acronym class="acronym">HTML</acronym> and <acronym class="acronym">PDF</acronym> was controlled
+            by a <span class="application">Phing</span> script.</p><div class="sect3" id="d5e264"><div class="titlepage"><div><div><h4 class="title">References for technologies used to produce this document</h4></div></div></div><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><code class="uri"><a class="uri" href="http://docbook.org/" target="_top">DocBook</a></code>, is a defined
+                            <acronym class="acronym">XML</acronym> schema that identifies the meaning of different
+                        parts of a document. It is specifically well suited to write technical
+                        computer related documents but can also be used to write generic documents.
+                        By itself DocBook does not care about how the document is displayed (in
+                        contrast to for example OpenOffice or Word). </p><p>In order to transform the DocBook <acronym class="acronym">XML</acronym> document into
+                        something suitable for human reading (such as <acronym class="acronym">HTML</acronym> and
+                            <acronym class="acronym">PDF</acronym>) a set of <acronym class="acronym">XSL</acronym> stylesheets are
+                        used. They are known as the <acronym class="acronym">DocBook XSL</acronym> stylesheets. The
+                        current version as of this writing was 1.76.1</p></li><li class="listitem"><p><code class="uri"><a class="uri" href="http://www.w3.org/Style/XSL/" target="_top">XSL</a></code>, stands for
+                            <span class="termdef">[Definition: Extensible Stylesheet Language Family]</span> is an overall
+                        term for three technologies used to process XML documents into other XML
+                        documents. The included technologies are:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: circle; "><li class="listitem"><p><code class="uri"><a class="uri" href="http://www.w3.org/TR/xslt" target="_top">XSLT</a></code>, is a
+                                programming language for transforming <acronym class="acronym">XML</acronym>
+                                documents into other well formed <acronym class="acronym">XML</acronym> document,
+                                for example <acronym class="acronym">(X)HTML </acronym>documents.</p></li><li class="listitem"><p><code class="uri"><a class="uri" href="http://www.w3.org/TR/xpath/" target="_top">XPath</a></code>, a way
+                                to uniquely identify different parts of a well formed
+                                    <acronym class="acronym">XML</acronym> document. This is used as the search
+                                language in the stylesheet to specify what elements to
+                                transform.</p></li><li class="listitem"><p><code class="uri"><a class="uri" href="http://www.w3.org/TR/xsl/" target="_top">XSL-FO</a></code>, is a
+                                defined <acronym class="acronym">XML</acronym> schema that defines how a printed
+                                output should be displayed. This format can later be easily
+                                transformed into other formats suitable for printed output such as
+                                PDF or RTF.</p></li></ul></div></li><li class="listitem"><p><code class="uri"><a class="uri" href="http://xmlsoft.org/XSLT/xsltproc2.html" target="_top">xsltproc</a></code>,
+                        is the GNOME projects <acronym class="acronym">XSLT</acronym> processor that uses an
+                            <acronym class="acronym">XSL(T)</acronym> program to transform one
+                            <acronym class="acronym">XML</acronym> document into another. This is one of the few
+                            <acronym class="acronym">XSLT</acronym> processors written in C (most others are written
+                        in Java)</p></li><li class="listitem"><p><code class="uri"><a class="uri" href="http://xmlgraphics.apache.org/fop/" target="_top">fop</a></code>, is the
+                        Apache projects <acronym class="acronym">XSL-FO</acronym> processor. This is primarily used
+                        to transform a <acronym class="acronym">XSL-FO</acronym> document into a
+                            <acronym class="acronym">PDF</acronym> document.</p></li><li class="listitem"><p><code class="uri"><a class="uri" href="http://www.oxygenxml.com/" target="_top">Oxygen</a></code>, the
+                            <acronym class="acronym">XML</acronym> editor used to for writing the source
+                            <acronym class="acronym">XML</acronym> document.</p></li></ul></div></div></div></div></div><div class="navfooter"><hr/><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s02.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"> </td><td width="40%" align="right" valign="top"> Overview of the components</td></tr></table></div><div class="footer">WebHelp output generated by<a href="http://www.oxygenxml.com" target="_blank"><span class="oXygenLogo"><img src="oxygen-webhelp/resources/img/LogoOxygen100x22.png" alt="Oxygen"/></span><span class="xmlauthor">XML Author</span></a>.
+        </div>    <script type="text/javascript">
+        <!--
+            function expand(){
+                if (parent.tocwin){
+                    parent.tocwin.expandToTopic(window.location.href, this.getAttribute('href'));
+                }
+            }
+            var aArray = document.getElementsByTagName('a');
+            var i;
+            for (i = 0; i< aArray.length; i++){
+              aArray[i].onclick = expand;
+            }
+        -->
+    </script> 
+    <div id="productInfo" style="display:none;">
+        <span id="oxy_productID"></span>
+        <span id="oxy_productVersion"></span>
+    </div>
+    <div id="loginData" style="display: none">
+		<span class="bt_close" title="Close"></span>
+		<form action="" target="passwordIframe" method="POST" name="form_login" onsubmit="return loggInUser();" id="loginFormData" autocomplete="on" >
+			<input type="hidden" id="reloadComments" value="yes"/>
+			<table class="login">
+				<thead>
+					<tr>
+						<td colspan="2">
+							<span id="l_login2">
+							<script type="text/javascript">$('#l_login2').html(getLocalization('label.login'));</script>			
+							</span>
+						</td>
+					</tr>
+					<tr>
+						<td colspan="2">
+							<div id="loginResponse"></div>
+						</td>
+					</tr>
+				</thead>
+				
+				<tr>
+					<td>
+						<span id="l_userName">
+							<script type="text/javascript">$('#l_userName').html(getLocalization('label.userName'));</script>			
+						</span>						
+					</td>
+					<td><input name="usernameW" type="text" id="myUserName"  autocomplete="on" required="required" autofocus="autofocus" /></td>
+				</tr>
+				<tr>
+					<td>
+						<span id="l_pswd">
+							<script type="text/javascript">$('#l_pswd').html(getLocalization('label.pswd'));</script>			
+						</span>
+					</td>
+					<td><input name="passwordW" type="password" id="myPassword" autocomplete="on" required="required" /></td>
+				</tr>
+				<tr>
+					<td colspan="2" align="left">									
+					<span id="ll_remember">
+							<script type="text/javascript">
+								$('#ll_remember').html(getLocalization('label.rememberme'));
+							</script>			
+						</span>
+						&nbsp;&nbsp;&nbsp;
+							<input name="myLoginRemember" type="checkbox" class="ck" id="myRemember" value="no"/>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2" align="center">
+					<input id="l_bt_submit_log" type="submit" value="Submit" name="loginFormButton"/>
+					
+					<script type="text/javascript">$('#l_bt_submit_log').attr('value',getLocalization('label.login'));</script>
+					<span class="btnHGlue"></span>
+					<input class="bt_cancel" id="l_cancelLog" type="button" value="Cancel" name="loginFormButton"/>												
+					<script type="text/javascript">$('#l_cancelLog').attr('value',getLocalization('label.cancel'));</script>
+			</td>
+				</tr>
+			</table>
+			<div class="loginAlternative">
+				<span id="link_lostPwd" onclick="showLostPwd()">
+					<script type="text/javascript">$('#link_lostPwd').html(getLocalization('label.lostPswd'));</script>
+				</span> 
+				<span id="link_signUp" onclick="showSignUp()">
+					<script type="text/javascript">$('#link_signUp').html(getLocalization('label.signUp'));</script>
+				</span>
+			</div>
+			
+		</form>
+		<iframe id="passwordIframe" name="passwordIframe" style='display:none'></iframe>
+	</div>
+	<div id="commentsContainer"></div>
+                 </body></html>

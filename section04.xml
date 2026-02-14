@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?hard-pagebreak?>
+<sect1 xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
+    version="5.0" revision="$Id: section04.xml 57 2013-12-16 08:37:48Z ljp $">
+    <title>Setting up Apache HTTP-server</title>
+    <para>To setup Apache we will first create and enable <acronym>SSL/TLS</acronym> certificates to
+        be able to connect over https:// protocol to the server. After this we will define a
+        separate document root for the <acronym>HTTPS</acronym> traffic and finally enable
+            <acronym>PHP5</acronym> for the secured version of Apache. </para>
+    
+    <para>To separate the normal document root (that is accessed through <code>http://</code>) and
+        the secure root (accessed through <code>https://</code>) we will also create a new secure
+        document root at “<filename>/srv/www/ssl-htdoc</filename>”. </para>
+    <para>In the following we will assume that you have installed Apache v2.x together with the
+        Apache <acronym>PHP5</acronym> module through SuSE package management. </para>
+    <para>
+        <caution>
+            <para>Please make sure that you can access a test page using normal
+                    <acronym>HTTP</acronym> traffic to your Web-server before continuing!</para>
+        </caution>
+    </para>
+    <sect2>
+        <title>Creating self-signed SSL/TLS certificate for Apache</title>
+        <para>Creating <acronym>SSL/TLS</acronym> certificates for the <code>https://</code>
+            protocol is as mentioned above is straightforward but tedious. The good news here is
+            that in OpenSuSE there is a shell script that does all the steps involved in creating
+            certificates semi-automatically using openssl, “<command>gensslcert</command>”. The
+            built-in help in this script will show all necessary options for the certificates. So
+            running</para>
+        <para>
+            <screen>$> gensslcert -h</screen>
+        </para>
+        <para>will give you the list of all options. In the example command line below we will
+            assume that the server resides in Sweden (country code SE) and accessed through the IP
+            address <literal>192.168.0.50</literal> (in the address range reserved for a local net
+            which is not directly connected to the internet). The IP address specified on the
+            command line is rather important (it is the <acronym>CN</acronym> name) as described in
+            the previous section on <acronym>SSL</acronym>/<acronym>TLS</acronym>. When your browser
+            accesses the server it will check that the certificate it received from the server
+            matches the <acronym>URL</acronym> used to access the server. If there is a mismatch the
+            browser will generate a warning that the site should not be trusted (since the
+            certificate could have been made out to another server and then just copied). This might
+            cause some irritation since it is common for a home-server to be multi-homed, i.e.
+            accessed via different paths or <literal>URL</literal>s. An example might be a dynamic
+                <acronym>DNS</acronym> setup to access the home server from anywhere in the world
+            with a domain name of choice, say “<uri>http://myserver.dyndns.com</uri>” . In addition
+            a server can also be accessed in the local network, for example as
+                <uri>http://192.168.0.50</uri>.</para>
+        <para>So there is a choice to be made here. The domain name which you most often use to
+            connect to your server should be used in the certificate (as given in the Common Name
+            field). This way you get the fewest warnings when connecting to your server.</para>
+        <para>
+            <tip>
+                <para>With a more advanced setup for the certificate handling, described in <xref
+                        xlink:href="#appendix.openssl"/>, it is possible to setup several “alias”
+                    addresses for the same server (using the <acronym>AltN</acronym> field in the
+                    certificate) to avoid this kind of irritating warning messages.</para>
+            </tip>
+        </para>
+        <para> in our case we will use the IP as the common name for the server certificate so we
+            call the utility script as:</para>
+        <para>
+            <screen>$> gensslcert –y 3650 –Y 7000 –c SE –n 192.168.0.50</screen>
+        </para>
+        <para>This will create both our own trusted root certificate as well as the certificate for
+            the server itself and then sign the certificates with our own root certificate. Our
+            self-signed certificate will be valid for 10 years (~3650 days) and valid for the server
+            that is accessed by the IP address <literal>192.168.0.50</literal>. Our
+                <acronym>CA</acronym> (root) certificate will be valid for roughly 20 years (~7000
+            days). It is still possible to access the server through other <acronym>URLS</acronym>s
+            for example by its name (if you have put it in your “/etc/hosts” file or even have a
+            local <acronym>DNS</acronym> setup) but the browser will issue a warning in that case
+            that it cannot validate the authenticity of the server. The exact wording of the warning
+            (and appearance) is browser dependent.</para>
+        <para>After you have run this script the necessary certificate files will be stored under
+            various subdirectories “<filename>/etc/apache2/ssl.*</filename>” as shown in <xref
+                xlink:href="#tbl.gensslcert-files"/>.</para>
+        <para>After the certificates have been created we must now enable <acronym>SSL</acronym> and
+            set the document root correctly in Apache for the virtual host which will handle the
+            incoming <acronym>HTTPS</acronym> connections.</para>
+        <table xml:id="tbl.gensslcert-files">
+            <title>Certificate/keys generated by &quot;gensslcert&quot;</title>
+            <tgroup cols="2">
+                <colspec colname="c1" colnum="1" colwidth="1*"/>
+                <colspec colname="c2" colnum="2" colwidth="1*"/>
+                <thead>
+                    <row>
+                        <entry>Cert/key file</entry>
+                        <entry>Description</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry><filename>ssl.crt/192.168.0.50-server.crt</filename></entry>
+                        <entry>X509 SSL/TLS certificate. The certificate contains the public key of
+                            the server.</entry>
+                    </row>
+                    <row>
+                        <entry><filename>ssl.key/192.168.0.50-server.key</filename></entry>
+                        <entry>SSL/TLS private key. Must be kept private at all times!</entry>
+                    </row>
+                    <row>
+                        <entry><filename>ssl.crt/192.168.0.50-ca.crt</filename></entry>
+                        <entry>The CA root certificate (public key). This file should be imported to
+                            your Web-browser to avoid the “unrecognized certificate“ warning when
+                            you are connecting to your HTTPS connection.</entry>
+                    </row>
+                    <row>
+                        <entry><filename>ssl.key/192.168.0.50-ca.key</filename></entry>
+                        <entry>The CA root private key. Should be kept private at all times!</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+    </sect2>
+    <sect2>
+        <title> Enabling SSL in the OpenSuSE configuration</title>
+        <para>Many of the configurations in the apache configuration script templates available with
+            OpenSuSE have conditional statements whether <acronym>SSL/TSL</acronym> is enabled or
+            not. This is controlled by a single flag stored in the configuration file
+                “<filename>/etc/sysconfig/apache2</filename>”. In this file a number of variables
+            define the setup for Apache. Here there are two variables that must be correctly
+            set.</para>
+        <para>First the string variable <literal>APACHE_MODULES</literal> has to have
+                “<literal>ssl</literal>” defined in the list of modules to be loaded. This module is
+            added by Yast when Apache is installed. If this module is missing there is a risk that
+            you have not properly installed Apache with the necessary <literal>mod_ssl</literal>
+            module.</para>
+        <para>Secondly the <acronym>SSL</acronym> flag must be set as a Apache server flag as </para>
+        <para>
+            <programlisting>APACHE_SERVER_FLAGS=”SSL”</programlisting>
+        </para>
+        <para>This must be set in order to enable the lines surrounded by a conditional
+                “<literal>&lt;IfDefine SSL></literal>” statement in the various Apache configuration
+            files.</para>
+        <note>
+            <para>To avoid manually editing <filename>/etc/sysconfig/apache2</filename> in oder to
+                enable or disable Apache modules or flags there are two command line tools that can
+                do this, "<command>a2enflag</command>" and "<command>a2enmod</command>". These two
+                command are used to disable/enable flags and modules in syconfig file.</para>
+            <para>For example the following two commands would add both the <literal>SSL</literal>
+                flag and the module <literal>mod_ssl</literal> to the configuration file</para>
+            <para>
+                <screen>$> a2enflag SSL
+$> a2enmod ssl</screen>
+            </para>
+            <para>To list all the currently enabled modules use the following command (the modules
+                listed below are just examples and does not necessary reflect what must be
+                loaded.)</para>
+            <para><screen>$> a2enmod -l
+actions alias auth_basic authn_file authz_host authz_groupfile \ 
+authz_default authz_user autoindex cgi dir env expires proxy \
+proxy_http proxy_html include log_config mime negotiation \
+setenvif ssl userdir rewrite php5 dav dav_svn</screen></para>
+            <para> </para>
+        </note>
+    </sect2>
+    <sect2>
+        <title>Setting up a virtual host for HTTPS</title>
+        <para>What we want to do now is to make use of the certificates we created and have Apache
+            look in the alternative document root “<filename role="directory"
+                >/srv/www/ssl-htdocs</filename>” when the server receives a request over
+                “<acronym>https://</acronym>”</para>
+        <para>
+            <note>
+                <para>Strictly speaking there is no need to have a separate document root for
+                        <acronym>HTTPS</acronym>. It is possible to use the same document root as
+                    for normal <acronym>HTTP</acronym> traffic. However, for security reasons it is
+                    better to put pages that should only be accessible through the
+                        <acronym>HTTPS</acronym> in a separate root to avoid the risk that they are
+                    accessed through the normal <acronym>HTTP</acronym> protocol by mistake.</para>
+            </note>
+        </para>
+        <para>We will be very short in the description here since configuring Apache is not
+            necessarily difficult but requires a lot of text to explain all the details. So in this
+            context we will just show what is needed with a minimum of explanations (there are
+            entire books written on Apache configurations to consult). In <xref
+                xlink:href="#appendix.apache"/>. there is a also a complete configuration file as an
+            example.</para>
+        <para>To setup the new document root for the <acronym>https://</acronym> connection start
+            with the following four steps:</para>
+        <para>
+            <orderedlist>
+                <listitem>
+                    <para>Switch to root user</para>
+                </listitem>
+                <listitem>
+                    <para>Create the enw document root for <acronym>HTTPS://</acronym></para>
+                    <para>
+                        <screen>$> mkdir /srv/www/ssl-htdocs</screen>
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>Change to directory <filename>/etc/apache2/vhosts.d</filename></para>
+                </listitem>
+                <listitem>
+                    <para>Copy the template config file for an <acronym>SSL</acronym>-enabled server
+                        as a starting point</para>
+                    <para>
+                        <screen>$> cd /etc/apache2/vhost
+$> cp vhost-ssl.template vhost-ssl.conf</screen>
+                    </para>
+                </listitem>
+            </orderedlist>
+        </para>
+        <para>We shall now edit the <filename>vhost-ssl.conf</filename> file so that Apache finds
+            the certificates we want to use and the new document root we just created. Find the
+            following variables in the configuration file we just copied (vhost-ssl.conf) and change
+            them as shown below</para>
+        <programlisting># Setup document root and server name
+DocumentRoot “/srv/www/ssl-htdocs”
+ServerName 192.168.0.50:443  
+
+# Setup log files
+ErrorLog /var/log/apache2/ssl-error.log
+TransferLog /var/log/apache2/ssl-access.log  
+
+# Tell Apache where to find the certificate files  
+SSLCertificateFile /etc/apache2/ssl.crt/192.168.0.50-server.crt
+SSLCertifictaeKeyFile /etc/apache2/ssl.key/192.168.0.50-server.key
+SSLCertifictaeChainFile /etc/apache2/ssl.crt/192.168.0.50-ca.crt</programlisting>
+
+        <para>After you have changed this we need to tell Apache to accept the new document root.
+            Add the following lines just after the <code>TransferLog</code> directive (as long as it
+            appears within the “<literal>&lt;VirtualHost _default_:443> …
+                &lt;/VirtualHost></literal>” it is really irrelevant where you put it)</para>
+        <para>
+            <programlisting>&lt;Directory “/srv/www/ssl-htdocs”>
+  Options None
+  AllowOverride All
+  Order allow,deny
+  Allow from all
+&lt;/Directory></programlisting>
+        </para>
+        <para>To also enable <acronym>PHP5</acronym> and any other configurations that is available
+            for the standard Web-server we include all the other configurations files as well by
+            adding the line below Just before the <literal>&lt;Directory></literal> directive (this
+            assumes that you have installed <literal>mod_php5</literal> for use with Apache
+            previously)</para>
+        <para>
+            <programlisting>Include /etc/apache2/conf.d/*.conf</programlisting>
+        </para>
+        <para>Any additional configuration files added to your Apache setup (possible by Yast) will
+            be read also for our encrypted setup in this way. </para>
+        <para>Please look at the (very) readable Apache documentation for a more detailed
+            explanation of possible setups. It is also highly likely that in the end you may want to
+            tailor the setup according to your own needs (most likely you want to change the
+                <literal>Options</literal> parameter for the document root directory, for example to
+            allow symbolic links to be followed). </para>
+        <para>
+            <tip>
+                <para>In <xref xlink:href="#appendix.apache"/>we show an example of a complete
+                        <filename>vhost-ssl.conf</filename> file.</para>
+            </tip>
+        </para>
+    </sect2>
+    <sect2>
+        <title>Restarting and enabling Apache</title>
+        <para>What remains now is to restart Apache and make sure there are no errors. To do this
+            execute the following commands as root and verify that there are no errors. If there are
+            any errors go back and check for spelling mistakes in the configuration files. Error
+            messages to help pinpoint the problem can usually be found in
+                "<filename>/var/log/messages</filename>" or in the directory "<filename
+                role="directory">/var/log/apache2/</filename>"</para>
+        <screen>$> rcapache2 restart
+Syntax OK
+Shutting down httpd2 (waiting for children to terminate)    done
+Starting httpd2 (prefork)                                   done</screen>
+        <para>
+            <tip>
+                <para>If you are used to SysV ini files you could as well start the server with the
+                    line </para>
+                <para>
+                    <screen>$> /etc/init.d/apache2 restart</screen>
+                </para>
+                <para><filename>/sbin/rcapache2</filename> is just a symbolic link to the
+                    corresponding <filename role="directory">init.d</filename> script</para>
+            </tip>
+        </para>
+        <para>After this you probably also want to have Apache start automatically each time you
+            start your server. If you haven’t already done so give the command (as root):</para>
+        <para>
+            <screen>$> chkconfig –add apache2</screen>
+        </para>
+        <para>This will add Apache daemon as a service in the default run levels for your machine.
+            This could also be done by opening Yast and go into
+                <literal>&lt;system->runlevels></literal> and add Apache as a service to be
+            started.</para>
+        <para>Before continue verify that you can make a connection to Apache over
+                <acronym>HTTPS</acronym> (for example by just creating a single line
+                “<filename>index.html</filename>” in the root directory and just call
+                <uri>https://localhost/index.html</uri> from the browser)</para>
+        <para>Be aware that there will be a warning about this being an untrusted site since the
+            root certificate we use have not been installed in the browser as a trusted certificate.
+            For now just ignore this. </para>
+    </sect2>
+
+</sect1>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>A.2 Example 2</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49619008"/>A.2 Example 2</h1></div></div></div>
+        
+        <p>Changing the mynetwork_style to only allow password less logins originating from the
+            same server and require (SASL) password from all other logins are safer and can be done
+            by this</p>
+        <pre class="programlisting">mynetworks_style = host
+            
+smtpd_recipient_restrictions = 
+  permit_mynetworks
+  permit_sasl_authenticated
+  reject_unauth_destination</pre>
+    </div></body></html>

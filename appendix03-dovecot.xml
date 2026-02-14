@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<appendix xmlns="http://docbook.org/ns/docbook"
+    revision="$Id: appendix03-dovecot.xml 29 2012-01-04 13:18:16Z ljp $"
+    xmlns:xlink="http://www.w3.org/1999/xlink" version="5.0" xml:id="appendix.dovecot">
+    <title>Dovecot tips and tricks</title>
+    <sect1>
+        <title>Automatic expunging of old mails</title>
+        <para>Subscribing to non-personal mail like newsletters and mail lists tends to grow the
+            mailbox quit a lot with information that usually is valid only for a short time. So
+            having this kind of mail automatically deleted after a certain time period, say 2 weeks,
+            is usually a good thing.</para>
+        <para>Dovecot provides a utility program called <application>doveadm</application> that can
+            do exactly this. Among other things <application>doveadm</application> have a command
+                "<literal>expunge</literal>" to delete all mails that matches a certain search
+            criteria in a specified mailbox. </para>
+        <para>An example will clarify how this work. Assume we want to delete all mails older than
+            two weeks in our "dovecot" mail folder. To do this we search and delete all mails that
+            were stored in that mail folder more than fourteen days ago with the command:</para>
+        <programlisting>/usr/bin/doveadm expunge mailbox dev.dovecot savedbefore 14d</programlisting>
+        <para>All messages older than 14 days in the mail folder “<filename>dev/dovecot</filename>”
+            have now been deleted. </para>
+        <para>In Linux we can then setup a <application>cron</application> job that calls a script
+            with these expunge command at regular intervals, say once a week or even once a day. </para>
+        <para>The search commands for <application>doveadm</application> are quite flexible so
+            please look at the man page for other search options. The above line will cause all
+            mails (both read and unread) to be deleted. One common modification is to have non read
+            messages kept longer.</para>
+        <para>If we store the above line in a script as</para>
+        <programlisting>#!/bin/sh
+/usr/bin/doveadm expunge mailbox dev.dovecot savedbefore 14d</programlisting>
+        <para>and store the script as, say, <filename>/usr/local/bin/user-expungemail</filename> we
+            can then uses a cronjob to call this script a regular intervals. Having the jobs called
+            every Wednesday and Sunday at 3 a´clock in the morning would for example require us to
+            write</para>
+        <programlisting>0 3 * * 3,7     /usr/local/bin/user-expungemail</programlisting>
+        <para>If the server have multiple accounts each will need its own expunge cron job script
+            run as the user that owns the account. </para>
+    </sect1>
+    <sect1>
+        <title>Synchronizing (or backing up) two IMAP servers</title>
+        <para>If you have two <acronym>IMAP</acronym> server setups and you want to synchronize them
+            you can use the <command>dsync</command> command (which belongs to
+                <application>Dovecot</application>) this can either be used to make a complete
+            backup of a <acronym>IMAP</acronym> server and it can also be used to synchronize
+            between two <acronym>IMAP</acronym> servers.</para>
+        <para><emphasis role="bold">Example 1. Making a complete backup to a remote
+                server</emphasis></para>
+        <para>Make sure that the user exists on the remote server and then make sure that the
+            destination is empty the first time you run the backup command to avoid any conflicts.
+            Assuming the user is “<literal>joe</literal>” and the remote server is located at IP
+            address <literal>192.168.0.51</literal>. </para>
+        <para>Login as <literal>root</literal> (on this server, the source) and then give the
+            following command </para>
+        <screen>$>  dsync –u joe –v backup root@192.168.0.51 -u joe</screen>
+        <para>Dsync will now use ssh to login to the remote server and copy all the mails from this
+            server onto the remote server for this user.</para>
+        <para><emphasis role="bold">Example 2. Synchronizing between two servers</emphasis></para>
+        <para>The difference between backup and synchronization is that any changes in the remote
+            server will also be reflected back in the source server. Assuming the same user and
+            server as In the previous example this is now done by as so</para>
+        <screen>$>  dsync –u joe –v mirror root@192.168.0.51 -u joe</screen>
+    </sect1>
+</appendix>

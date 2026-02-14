@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>E.5 Generating the Dovecot/postfix key-pair</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49817568"/>E.5 Generating the Dovecot/postfix key-pair</h1></div></div></div>
+        
+        <p>This is done exactly analogue (but with the obvious change of filenames) as when we
+            created the HTTPS key-pair. The commands to create the key-pair are the
+            following.</p>
+        <p>First create the signing request</p>
+        <pre class="screen">$&gt; openssl req -new -nodes -keyout private/mail_private.pem \
+-out csr/mail_public.pem -config ./out_openssl.cnf</pre>
+        <p>And then signing this request with our own root certificate</p>
+        <pre class="screen">$&gt; <acronym class="acronym">openssl</acronym> ca -out public/mail_public.pem -config ./our_openssl.cnf \
+-infiles csr/mail_public_req.pem</pre>
+        <p>These lines have now created the following files</p>
+        <div class="itemizedlist"><ul class="itemizedlist"><li class="listitem">
+                <p><code class="filename">private/mail_private.pem</code>, The private key for our mail
+                    setupcc</p>
+            </li><li class="listitem">
+                <p><code class="filename">public/mail_public.pem</code>, The public key for our mail
+                    setup</p>
+            </li><li class="listitem">
+                <p><code class="filename">csr/mail_public_req.pem</code>, The signing request. This is not
+                    needed any more but could be kept to re-generate the certificate when it expires
+                    in 10 years.</p>
+            </li><li class="listitem">
+                <p><code class="filename">newcerts/02.pem</code>, A copy of the signed certificate for our
+                    records as a certification agency</p>
+            </li></ul></div>
+    </div></body></html>

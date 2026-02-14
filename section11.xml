@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?hard-pagebreak?>
+<sect1 xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
+    version="5.0" revision="$Id: section11.xml 50 2012-01-25 01:54:48Z ljp $">
+    <title>Where to find more information</title>
+    <para>Seeing that this description has taken far too many pages and still hardly can be called
+        complete one has to realize that it's not completely trivial to setup a fully working mail
+        server. There are many sidetracks we have avoided or just scratched on the surface on to
+        keep this HowTo from becoming a fully-fledged book. However we hope that this description
+        has provided a good overview and points of interest worthy of further study. Below we have
+        listed some sources of information for the different tools we have described here.</para>
+    <para/>
+    <sect2>
+        <title>On the usage of SuSE Yast tool</title>
+        <para>Using Yast might at times seem tempting however the setups possible via Yast are
+            limited and doing anything just outside the very basic setup is often not possible. In
+            addition some necessary configurations comes from manipulating <filename
+                role="directory">/etc/sysconfig</filename> file where documentation is scarce. </para>
+        <para>For that reason one has to manually configure most setups. In addition there are some
+            differences in the SuSE setup files compared with some tools default setup. In most
+            cases these changes are done to improve upon the standard delivered files. However lack
+            of proper detailed documentation makes it necessary to very carefully read through a
+            whole lot of system and internal configuration files that SuSE uses (but no-one else) to
+            really understand, for example, how a program is started. </para>
+        <para>In addition there are several utility scripts available that can help with mundane
+            tasks but since they are not documented (or that the documentation is successfully
+            hidden!) it's difficult to know about them. </para>
+    </sect2>
+    <sect2>
+        <title>References</title>
+        <orderedlist>
+            <listitem><para>"Survival guides - SSL/TLS and X.509 (SSL) Certificates", <uri  xlink:href="http://www.zytrax.com/tech/survival/ssl.html">http://www.zytrax.com/tech/survival/ssl.html</uri></para></listitem>
+            <listitem>
+                <para>"Apache 2.1/2.1 manual", <uri xlink:href="http://httpd.apache.org/docs/2.1/">http://httpd.apache.org/docs/2.1/</uri></para>
+            </listitem>
+        </orderedlist>
+    </sect2>
+
+</sect1>

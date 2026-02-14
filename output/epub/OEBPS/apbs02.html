@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>B.2 How to create filter that matches on any of several rules (creating an “OR” rule)</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49639024"/>B.2 How to create filter that matches on any of several rules (creating an “OR”
+            rule)</h1></div></div></div>
+        
+        <p>By default all matching rules in a filter need to apply before the action is taken. To
+            create a rule which simulates an “OR” condition for the matching expression one has to
+            make use of the “else” rule. This is done by executing an empty action “{ }” when all
+            the conditions do NOT match and our “real” actions if this condition is not true. (This
+            uses the fact that NOT( (NOT A) AND (NOT B)) = A OR B )</p>
+        <pre class="programlisting">:0 hb
+* !&lt;expression 1&gt;
+* !&lt;expression 2&gt;
+{ }
+
+:0 E
+&lt;action to be taken&gt;</pre>
+        <p><span class="italic">Please note that there should be one space in the “{ }” empty
+                statement!</span>
+        </p>
+        <p>So for example to store mail that comes from either ´"<code class="email">&lt;<a class="email" href="mailto:joe.r@gmail.com">joe.r@gmail.com</a>&gt;</code>"
+            or “<code class="email">&lt;<a class="email" href="mailto:helen.q@gmail.com">helen.q@gmail.com</a>&gt;</code>” in a folder called “Friends” the following recipe
+            could be used</p>
+        <pre class="programlisting">0: hb
+* !^From:.*joe.r@gmail.com
+* !^From:.*Helen.q@gmail.com
+{ }
+
+:0 e
+$FRIENDS</pre>
+    </div></body></html>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>B.3 Out of office</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49669440"/>B.3 Out of office</h1></div></div></div>
+        
+        <p>The following receipe shows how to send an automatic answer to incoming messages. Fro
+            this we use the utility program "formmail". We also take some precaution to avoid an
+            infinite loop when the sender also have an automatic reply to avoid mails just bouncing
+            back and forth.</p>
+        <pre class="programlisting">#--------------------------------------------------------------------------
+# Out of office
+#--------------------------------------------------------------------------
+:0 h c
+* !^FROM_DAEMON
+* !^FROM_MAILER
+* !^X-Loop: out_of_office
+| (/usr/bin/formail -r -A"Precedence: junk (autoreply)" -A"X-Loop: out_of_office" \
+-I"Subject: Out of office reply"; cat $HOME/out_of_office.txt) | $SENDMAIL -t</pre>
+    </div></body></html>

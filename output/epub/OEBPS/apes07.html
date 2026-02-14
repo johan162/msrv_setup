@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>E.7 Keeping both the certificate and key in the same file</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49841568"/>E.7 Keeping both the certificate and key in the same file</h1></div></div></div>
+        
+        <p>It is useful to know that if some servers only give you the option to specify one
+            <acronym class="acronym">SSL/TLS</acronym> file you must combine both the public (certificate) and the private key in one
+            file. You can easily do this as</p>
+        <pre class="screen">$&gt; cat private/mail_private.pem public/mail_public.pem &gt; mail_combined.pem</pre>
+        <p>You could also do this for Dovecot and postfix since they will read the correct key
+            based on the headers in the file. Some might think that this is better way of keeping
+            out key-pair since we can never lose one key in the key-pair if we keep them
+            combined.</p>
+    </div></body></html>

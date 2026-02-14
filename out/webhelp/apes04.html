@@ -1,0 +1,69 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Generating the Apache HTTPS key-pair</title><meta name="generator" content="DocBook XSL Stylesheets V1.77.1"/><link rel="home" href="oxygen-main.html" title="The Complete OpenSuSE Mail Server"/><link rel="up" href="appendix.openssl.html" title="E. Create SSL/TLS keys and certificates with openssl"/><link rel="prev" href="apes03.html" title="Generating the CA key-pair"/><link rel="next" href="apes05.html" title="Generating the Dovecot/postfix key-pair"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><link rel="stylesheet" type="text/css" href="oxygen-webhelp/resources/css/webhelp_topic.css"/>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/jquery.js"> </script>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/jquery-ui.custom.min.js"> </script>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/frames_redirect.js"> </script>                                        <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/localization/strings.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/comments-functions.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/php/cnf.php"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/init.js"> </script>
+<script type="text/javascript"><!--
+    var prefix = "oxygen-main";
+    var ratingFile = "";
+    redirectToToc(window.location.search);
+    function highlightSearchTerm(){
+        if(parent.termsToHighlight != null){
+        // highlight each term in the content view  
+          for(i = 0 ; i < parent.termsToHighlight.length ; i++){        
+              $('*', window.parent.contentwin.document).highlight(parent.termsToHighlight[i]);
+          }
+        }
+    }
+//--></script>
+</head><body onload="highlightSearchTerm()"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Generating the Apache HTTPS key-pair</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="apes03.html">Prev</a> </td><th width="60%" align="center">E. Create SSL/TLS keys and certificates with openssl</th><td width="20%" align="right"> <a accesskey="n" href="apes05.html">Next</a></td></tr></table><hr/></div><span class="frames"><script type="text/javascript"><!--                    
+									 if (top === self) { 
+							        document.write("<div class='wFrames'><a href=" + getPath(location.pathname) + ">With Frames</a></div>");							
+						        } else {
+						          //document.write("<div class='wFramesPerma'><a href=" + getPath(location.pathname) + " target='_top' title='link to this page'>Link</a></div>");						
+						        }       
+                  --></script></span>
+<div class="sect1" id="d5e2504"><div class="titlepage"><div><div><h2 class="title" style="clear: both">Generating the Apache HTTPS key-pair</h2></div></div></div><p>We will now generate the key-pair that will allow HTTPS traffic. We will show two ways
+            of doing this. The first (and simplest) is top just generate a key-pair which is valid
+            for exactly one common name, i.e. the name you access the browser with. On a home
+            network where you probably don’t have a DNS server you will most likely access the
+            server via an IP address directly. The problem with only having one name in the
+            certificate is that if you access the browser through some other methods (perhaps from
+            outside your router with a completely different IP address) you might again get a
+            warning about untrusted site even if you have imported browser public key. </p><p>The following command will generate a key-pair. As you can see we have added the
+            suffix “_req” to the public key. That is to remind ourself that this will just be used
+            as a certificate signing request, i.e. this public key has not yet been signed by our CA
+            key-pari created in the previous step. After we have signed the key it will be named
+            “https_public.pem” </p><pre class="screen">$&gt; <acronym class="acronym">openssl</acronym> req -new -nodes -keyout private/https_private.pem \
+-out csr/https_public_req.pem -config ./our_openssl.cnf</pre><p>Answer all the questions that you are now presented with. Keep in mind that every
+            certificate must have a unique distinguished name that is made up of the fields like
+            company name, city, department/unit etc. A recommendation is therefore to use “Web” (or
+            Apache or similar) as the unit name to differentiate this certificate from the other
+            mail certificate we need to create as a next step. </p><p>For future reference you should save all requests and keys. The request can be re-used
+            if the certificate has expired. So far we produced the following new files:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><code class="filename">csr/https_public_req.pem</code>, This is the public key that we
+                    will sign with our CA keys</p></li><li class="listitem"><p><code class="filename">private/https_private.pem</code>, This is our private key that
+                    will be loaded by Apache</p></li></ul></div><p>It is now time to sign the public key with our CA key. This is done with the
+            command</p><pre class="screen">$&gt; <acronym class="acronym">openssl</acronym> ca -out public/https_public.pem -config ./our_openssl.cnf \
+-infiles csr/https_public_req.pem</pre><p>Note: The config file has to be given on the command line before the “-infiles”
+            command! </p><p>Answer the questions and use the password for the private CA key we created in section
+            E.3. We have now generated the files</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>public/https_public.pem, This is the signed public certificate for
+                    Apache</p></li><li class="listitem"><p>newcerts/&lt;some_large_serial_number&gt;.pem, A copy for our own record of the
+                    just created certificate. The naming is the serial number of the certificate.
+                </p></li></ul></div><p>This newly signed certificate is also recorded in our database file “index”</p></div><div class="navfooter"><hr/><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="apes03.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="appendix.openssl.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="apes05.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Generating the CA key-pair </td><td width="20%" align="center"><a accesskey="h" href="oxygen-main.html">Home</a></td><td width="40%" align="right" valign="top"> Generating the Dovecot/postfix key-pair</td></tr></table></div><div class="footer">WebHelp output generated by<a href="http://www.oxygenxml.com" target="_blank"><span class="oXygenLogo"><img src="oxygen-webhelp/resources/img/LogoOxygen100x22.png" alt="Oxygen"/></span><span class="xmlauthor">XML Author</span></a>.
+        </div>    <script type="text/javascript">
+        <!--
+            function expand(){
+                if (parent.tocwin){
+                    parent.tocwin.expandToTopic(window.location.href, this.getAttribute('href'));
+                }
+            }
+            var aArray = document.getElementsByTagName('a');
+            var i;
+            for (i = 0; i< aArray.length; i++){
+              aArray[i].onclick = expand;
+            }
+        -->
+    </script> 
+</body></html>

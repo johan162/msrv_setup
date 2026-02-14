@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>9 Setting up procmail</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49500688"/>9 Setting up procmail</h1></div></div></div>
+    
+    <p>When postfix receives a mail it will by default store the mail in the mail spool directory
+        (either “<code class="filename">/var/spool/mail/user</code>” or
+        “<code class="filename">/var/mail/user</code>”). </p>
+    <p>Postfix offers no possibility of post-processing of the received mails. For example to run
+        the received mails through a spamfilter (like spamassassin) and put all identified spams in
+        a separate mail folder. </p>
+    <p>To solve this we tell postfix to send all the received mails that should be locally
+        delivered through another program, in our case procmail. It is this program that will act as
+        a Local Delivery Agent, <acronym class="acronym">LDA</acronym>, and perform the last stage when incoming
+        mails are store on disk. </p>
+    <div class="sect2"><div class="titlepage"><div><div><h2 class="title"><a id="idp49504544"/>9.1 Configuration file</h2></div></div></div>
+        
+        <p>Procmail is controlled with (yet another) configuration file which by default is in
+            the home directory of the user receiving the mail <code class="filename">.procmailrc</code>) .
+            The configuration file will contain rules on how to process the incoming mails, such as
+            storing mails based on different criteria in different folders. It is even possible to
+            have certain mails automatically trigger other external programs. A typical use of this
+            would be a server where users can send a one line mail to have some useful information
+            automatically sent back. </p>
+        <p>In order to tell postfix to send incoming mails to procmail we must add the following
+            line in the postfix config file (<code class="filename">/etc/postfix/main.cf</code>)</p>
+        <p>
+            </p><pre class="programlisting">mailbox_command = /usr/bin/procmail</pre><p>
+        </p>
+        <p>The next step is to setup the configuration file for procmail. Since it is possible to
+            write an entire book on how to write procmail filtering rule we will keep this example
+            simple. The example rule file below will do the following:</p>
+        <div class="itemizedlist"><ul class="itemizedlist"><li class="listitem">
+                <p>we will enable logging in a separate log file for each user under the
+                        <code class="filename">/tmp</code> directory</p>
+            </li><li class="listitem">
+                <p>if the mail is judged to be “normal” spam we store it in the folder
+                    “Junk”</p>
+            </li><li class="listitem">
+                <p>if the mail have a very high spam score we just discard them by deleting them
+                    forever</p>
+            </li><li class="listitem">
+                <p>if the mail has the word “Newsletter” in the subject or comes from a sender
+                    “*.news.com” we put it in a separate mail folder “Newsletters”</p>
+            </li><li class="listitem">
+                <p>otherwise we store it in the default inbox</p>
+            </li></ul></div>
+        <p>The home page for procmail has many more receipts that you can take directly. For
+            example <span class="italic">“Out of office</span>” style of automatic
+            replies.</p>
+        <p>Unfortunately the syntax for procmail configuration is not exactly intuitive (anyone
+            who think that has spent too much time with mail servers) but the basic structure in
+            this example file will get you a good start and will serve a good start for your own
+            experiments. It would bring this tutorial too far off track to become a “How To Write
+            procmail Filter rules” as well. Refer to the procmail documentation for details.</p>
+        <p>In <a class="xref" href="apb.html" title="Appendix B - Procmail recipes">Appendix B</a> we also show some more example of procmail
+            configuration recipes.</p>        
+        <div class="example"><a id="idp49519344"/><p xmlns="" class="formal-object-title"><span class="label">Example 1: </span><span class="title">Template for a procmail configuration file</span></p><div class="example-contents"><pre class="programlisting">#---------------------------------------------
+# Standard setup for extra logging
+#---------------------------------------------
+VERBOSE=on
+LOGABSTRACT=all
+LOGFILE=/tmp/procmail-${LOGNAME}-`date +%Y%m`.log
+MAILDIR=/srv/mail/${LOGNAME}
+DEFAULT=${MAILDIR}/
+INBOX=${MAILDIR}/
+
+#---------------------------------------------
+# Subfolders to filter mails in.  
+# REMEMBER TO PUT TRAILING '/' AT # THE END 
+# to mark the folders as being in maildir format
+#---------------------------------------------
+SPAM=${MAILDIR}/.Junk/
+NEWSLETTERS=${MAILDIR}/.newsletters/
+
+##--------------------------------------------
+## End of setup. Now comes all the filer 
+## rules.
+##--------------------------------------------
+
+#---------------------------------------------
+# FILTER for Newsletters.
+#---------------------------------------------
+:0
+^Subject:.*Newsletter
+^From:.*news.com
+{ }
+:0 E
+$NEWSLETTERS
+
+#---------------------------------------------
+# FILTER for spamassassin
+#---------------------------------------------
+:0
+* &lt; 512000
+| /usr/bin/spamc
+#---------------------------------------------
+# Discard all spams with score &gt;= 15
+#---------------------------------------------
+:0
+* !^X-Spam-Level: \*\*\*\*\*\*\*\*\*\*\*\*\*\*\*.*
+* !^X-Spam-Status: Yes, score=1[5-9]\.[0-9]
+* !^X-Spam-Status: Yes, score=[2-9][0-9]\.[0-9]
+{ }
+:0 E
+/dev/null
+
+#---------------------------------------------
+# Put all remaining spams in Junk folder.
+# NOTE: This assumes spamassassin is configured
+# to set the X-Spam-Flag: YES for identified
+# spams.
+#---------------------------------------------
+:0
+* ^X-Spam-Flag: YES
+$SPAM
+
+#---------------------------------------------
+# Send the remaing mails to the inbox
+#---------------------------------------------
+:0
+$DEFAULT
+</pre></div></div>
+        <div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3>
+            <p>By default procmail only supports “AND” rules, i.e. if you add a number of
+                conditions before an action all of them has to be fulfilled for the action to be
+                performed. </p>
+            <p>One of the most frequent questions newcomers to procmail have is therefore how
+                to write “OR” rules, i.e. a rule that states that </p>
+            <p><code class="code">if condition1 or condition2 is true then do action</code></p>
+            <p>The way around this is to realize that </p>
+            <p><code class="code">“if A or B then do C”</code>
+            </p>
+            <p>is equivalent to </p>
+            <p><code class="code">“if (not A) and (not B) then do nothing else do C”. </code></p>
+            <p>Any book on Boolean logic will give more details on this subject. </p>
+        </div>        
+    </div>
+    
+</div></body></html>

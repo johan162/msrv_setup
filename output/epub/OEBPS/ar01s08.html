@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>8 Setting up spamassassin</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49441760"/>8 Setting up spamassassin</h1></div></div></div>
+    
+    <p><span class="application">Spamassassin</span> is a <span class="application">Perl</span> based
+        program/script that uses statistical analysis of text to determine the likelihood that a
+        certain mail is a spam or legitimate mail. <span class="application">Spamassassin</span> is one of
+        the oldest spam filter but has been regularly updated and is good enough for small scale
+        home based server. The main complaints for a large scale setup of is not the quality of the
+        analysis but rather that it requires quite a lot of computing power and can take several ms
+        to scan each mail. In a large (several thousand mails an hour) setup this can become a
+        bottleneck and a separate server might nede to be deployd for this prpose.. </p>
+    <p>However there is one way to speed things up and reduce the system load and that is the
+            <span class="command"><strong>spamd</strong></span>/<span class="command"><strong>spamc</strong></span> daemon/client setup. This allows
+            <span class="application">spamassassin</span> to remain running in the memory and avoids
+        starting up a <span class="application">Perl</span> process and shut it down for each mail to be
+        scanned. This is also installed by default (but not enabled). To call the resident daemon
+        the client <span class="command"><strong>spamc</strong></span> is used. This is also the client program we call from
+        within our <span class="application">procmail</span> script to run the mails through the spam
+        filter. </p>
+    <p>To enable the <span class="command"><strong>spamd</strong></span> daemon either enabled it via Yast System Services
+        (runlevel) editor or via the command line </p>
+    <p>
+        </p><pre class="screen">$&gt; chkconfig –add spamd</pre><p>
+    </p>
+    <p>After installing spamassassin via Yast there are several places where the configuration
+        files reside.</p>
+    <div class="itemizedlist"><ul class="itemizedlist"><li class="listitem">
+            <p><code class="filename">/usr/share/spamassassin</code> - This is where all the static rules
+                are stored that gets installed with spamassassin. In here is also the file local.cf
+                which is the only file that should be modified for local preferences since all other
+                files will be overwritten in case of an upgrade. However it is recommended tht you
+                do not make any modifications here. Instead use the config file under /etc (see next
+                bullet)</p>
+        </li><li class="listitem">
+            <p><code class="filename">/etc/mail/spamassassin/local.conf</code> - This is only the proper
+                place to do local modifications for server wide adjustments</p>
+        </li><li class="listitem">
+            <p><code class="filename">&lt;user home&gt;/.spamassassin/user_prefs</code> - This is the proper
+                file to set user specific modifications</p>
+        </li></ul></div>
+    <p>When spamassassin reads the configuration files it first reads the files under <code class="filename">/usr</code> then the files under <code class="filename">/etc</code> and finnaly the users home directory. If any file has the same name the
+        later version will be added to the previous version so any changes in a later file will
+        override previous changes.</p>
+    <p>The default settings are usually good enough for the majority of users but you may want to
+        lower the default spam threshold of a score of 5.0 to something a bit lower, say 4. This
+        change could be made in <code class="filename">/etc/mail/spamassassin/local.conf</code> to affect all
+        users on the server. </p>
+    <p>It is important to understand that spamassassin by itself does not sort mails in any way.
+        It simply adds a few headers in the mail indicating how likely the mail is to be a spam. It
+        is then up to the rules in the procmail script to interpret these headers to determine if
+        the mail should be put in the spamfolder or be received as a regular mail. The specific
+        headers added by spamassassin are shown in table <a class="xref" href="ar01s08.html#tbl.table7" title="Table 7. Headers added by spamassassin">Table 7</a>. </p>
+    <p>Spamassassin is in our setup run by procmail as an external program and run as the user
+        who is receiving the mail. Procmail puts each mail who's size is less than a predetermined
+        size through spamassassin and then looks in the headers to determine if the mail should be
+        put in the spam folder, possible deleted forever or just forwarded to the normal inbox or
+        perhaps some other mail folder. Review the procmail configuration in the next section for
+        how this is done. </p>
+    <p>The reason to limit the size of mail we put through spamassassin to avoid having (for
+        example) large mails with multimedia content to be run through spamassassin since that would
+        consume a lot of time and spam mails are never (well almost) that large so that would just
+        be a waste of server time.</p>
+    <div class="sect2"><div class="titlepage"><div><div><h2 class="title"><a id="idp49462976"/>8.1 Configuring spamassassin Bayes auto learning</h2></div></div></div>
+        
+        <p>Apart from the static analysis on headers and content of the mail spamassassin also
+            has the ability to learn the particular words in typical spams. This later on helps
+            spamassassin identify spams.</p>
+        <p>Bayes auto learning is enabled by default but you should also check that it is by
+            checking that <code class="literal">bayes_auto_learn 1</code></p>
+        <p>By default spamassassin learns word from mails and learns them as either spam or
+            non-spam ("ham") depending on thresholds defined in the configuration file. By default
+            these thresholds are rather high to avoid learning from false positive. You can be more
+            aggressive here and for example use the following lower thresholds values.</p>
+        <pre class="programlisting">#   Use Bayesian classifier (default: 1)
+#
+# use_bayes 1
+
+#   Bayesian classifier auto-learning (default: 1)
+#
+# bayes_auto_learn 1
+
+# Mail which scores outside this range will be fed back into SpamAssassin's
+# learning system automatically, to train the Bayesian scanner.
+ifplugin Mail::SpamAssassin::Plugin::AutoLearnThreshold
+bayes_auto_learn_threshold_nonspam      0.01
+bayes_auto_learn_threshold_spam         6.0
+endif # Mail::SpamAssassin::Plugin::AutoLearnThreshold</pre>
+        <p>The above changes can be made either in
+                <code class="filename">/etc/mail/spamassassin/local.conf</code> to take affect side wide or
+            in the <code class="filename">~/.spamassassin/user_prefs</code> file to affect only a specific
+            user.</p>
+        <p>If you have a folder with eihter spam or ham you can also instruct spamassassin to
+            learn from that collection with the use of the "<span class="command"><strong>sa-learn</strong></span>" command.
+            For example as</p>
+        <p>
+            </p><pre class="screen">$&gt; sa-learn --spam &lt;folder/with/spam.mails&gt;</pre><p>
+        </p>
+    </div>
+    <div class="sect2"><div class="titlepage"><div><div><h2 class="title"><a id="idp49470384"/>8.2 Verifying spamassassin</h2></div></div></div>
+        
+        <p>To verify that the spamassassin daemon is running we can do a simple manual test by
+            running some nonsense text through the spamassassin client <span class="command"><strong>spamc</strong></span>
+            which in turns calls on <span class="command"><strong>spamd</strong></span>.</p>
+        <p>
+            </p><pre class="screen">$&gt; echo “Nonsense text” | spamc -R</pre><p>
+        </p>
+        <p>You should now get a fairly long reply with the headers in table <a class="xref" href="ar01s08.html#tbl.table7" title="Table 7. Headers added by spamassassin">Table 7</a> clearly visible in a format that (almost) looks like the
+            raw format of a mail.</p>
+        
+        <div class="table"><a id="tbl.table7"/><p xmlns="" class="formal-object-title"><span class="label">Table 7: </span><span class="title">Headers added by spamassassin</span></p><div class="table-contents">
+            
+            <table summary="Headers added by spamassassin" border="1"><colgroup><col class="c1"/><col class="c2"/></colgroup><thead><tr><th>
+                            <p>Header</p>
+                        </th><th>
+                            <p>Description</p>
+                        </th></tr></thead><tbody><tr><td><code class="code">X-Spam-Checker-Version:</code></td><td>
+                            <p>Version information </p>
+                            <p><span class="bold"><strong>Example:</strong></span>
+                            </p>
+                            <p>
+                                </p><pre class="programlisting">X-Spam-Checker-Version: SpamAssassin 3.3.1. 
+(2010-03-16) on myhost.nil</pre><p>
+                            </p>
+                        </td></tr><tr><td><code class="code">X-Spam-Flag:</code></td><td>
+                            <p>A flag <code class="literal">YES</code> or <code class="literal">NO</code> to indicate
+                                if the computer score is over the set spam threshold </p>
+                            <p><span class="bold"><strong>Example:</strong></span>
+                            </p>
+                            <p>
+                                </p><pre class="programlisting">X-Spam-Flag: YES</pre><p>
+                            </p>
+                        </td></tr><tr><td><code class="code">X-Spam-Level:</code></td><td>
+                            <p>A graphical indication with ‘*’ to indicate the computed spam
+                                score. Each ‘*’ represents one integer score. </p>
+                            <p><span class="bold"><strong>Example:</strong></span>
+                            </p>
+                            <p>
+                                </p><pre class="programlisting">X-Spam-Level: ******</pre><p>
+                            </p>
+                        </td></tr><tr><td><code class="code">X-Spam-Status:</code></td><td>
+                            <p>A detailed list with the numerical score, required score and list
+                                of tests that indicates that this might be a spam. </p>
+                            <p><span class="bold"><strong>Example: </strong></span></p>
+                            <p>
+                                </p><pre class="programlisting">X-Spam-Status: Yes, score=8.0, required=4.0 
+tests=EMPTY_MESSAGE, MISSING_DATE,MISSING_MID, 
+NO_RELAYS autolearn=no version=3.3.1</pre><p>
+                            </p>
+                        </td></tr></tbody></table>
+        </div></div>
+    </div>
+    
+</div></body></html>

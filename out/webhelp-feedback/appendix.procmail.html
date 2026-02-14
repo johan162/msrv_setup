@@ -1,0 +1,182 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>B. Procmail recipes</title><meta name="generator" content="DocBook XSL Stylesheets V1.77.1"/><link rel="home" href="oxygen-main.html" title="The Complete OpenSuSE Mail Server"/><link rel="up" href="oxygen-main.html" title="The Complete OpenSuSE Mail Server"/><link rel="prev" href="apas04.html" title="Example 4"/><link rel="next" href="apbs02.html" title="How to create filter that matches on any of several rules (creating an “OR” rule)"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><link rel="stylesheet" type="text/css" href="oxygen-webhelp/resources/css/webhelp_topic.css"/>                           <link rel="stylesheet" type="text/css" href="oxygen-webhelp/resources/css/comments.css"/>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/jquery.js"> </script>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/jquery-ui.custom.min.js"> </script>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/frames_redirect.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/localization/strings.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/comments-functions.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/php/cnf.php"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/init.js"> </script>                                        <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/localization/strings.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/comments-functions.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/php/cnf.php"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/init.js"> </script>
+<script type="text/javascript"><!--
+    var prefix = "oxygen-main";
+    var ratingFile = "";
+    redirectToToc(window.location.search);
+    function highlightSearchTerm(){
+        if(parent.termsToHighlight != null){
+        // highlight each term in the content view  
+          for(i = 0 ; i < parent.termsToHighlight.length ; i++){        
+              $('*', window.parent.contentwin.document).highlight(parent.termsToHighlight[i]);
+          }
+        }
+    }
+//--></script>
+</head><body onload="highlightSearchTerm()"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">B. Procmail recipes</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="apas04.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="apbs02.html">Next</a></td></tr></table><hr/></div><span class="frames"><script type="text/javascript"><!--                    
+									 if (top === self) { 
+							        document.write("<div class='wFrames'><a href=" + getPath(location.pathname) + ">With Frames</a></div>");							
+						        } else {
+						          //document.write("<div class='wFramesPerma'><a href=" + getPath(location.pathname) + " target='_top' title='link to this page'>Link</a></div>");						
+						        }       
+                  --></script></span>
+<div class="appendix" id="appendix.procmail"><div class="titlepage"><div><div><h2 class="title">B. Procmail recipes</h2></div></div></div><p>The first line of a procmail filter always starts with “:0” and the remaining letters
+        controls the filtering process. </p><p>For example “h” will only filter on the mail headers, “c” will make a copy of the mail so
+        that it is available to filters after the current filter. If there is no “c” then the filter
+        will consume the mail and processing stops here and no more filters will be applied to the
+        mail.</p><p>Five good sites to find out more about how to write procmail recipes are:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><code class="uri">http://pm-doc.sourceforge.net/doc/</code> (The official procmail
+                documentation)</p></li><li class="listitem"><p><code class="uri">http://partmaps.org/era/procmail/mini-faq.html</code> (Procmail FAQ)</p></li><li class="listitem"><p><code class="uri">http://www.ii.com/internet/robots/procmail/qs/</code></p></li><li class="listitem"><p><code class="uri">http://userpages.umbc.edu/~ian/procmail.html</code></p></li><li class="listitem"><p><code class="uri">http://lipas.uwasa.fi/~ts/info/proctips.html</code></p></li></ul></div><div class="sect1" id="d5e2190"><div class="titlepage"><div><div><h2 class="title" style="clear: both"> The problem of filtering on the “Subject:” field</h2></div></div></div><p>While at first it might seem simple enough to filter out certain mails with a specific
+            subject either as spam or some other reason it is in practice a lot more complicated.
+            The problem is that the subject does not always have to be in plain text. Instead it is
+            very common to have the subject in either quoted printable or in base64. Such an encoded
+            string looks like =?charset?format?encoded text?= (this format is more specifically
+            described in RFC1522) and it can also be followed by some text in plain format and then
+            again by some encoded text. For obvious reason a lot of spam uses this format to make it
+            much more difficult to do simple text matching.</p><p>Unfortunately there is no easy way around this and procmail does not have any built in
+            “decoding” functionality so this has to be done manually.</p><p>To help with this the following small perl script can be used as a helper script. This
+            script has been floated on the net and the author is unfortunately unknown to me (if you
+            know please let me now and the proper credit will be given)</p><pre class="programlisting">#!/usr/bin/perl
+#
+# Perl script to decode a subject string possible encoded with RFC1522 
+# quoted printable or base64 encoding.
+# Author: Unknown.
+
+while (&lt;&gt;) {
+  chomp;
+  s/^[ \t]//;
+  foreach (split(/(=[?].*?[?][BQ][?].*?[?]=)/i)) {
+    if (($charset, $encoding, $txt) = /=[?](.*?)[?]([bq])[?](.*?)[?]=/i) {
+      $encoding =~ tr/[BQ]/[bq]/;
+      open PIPE, "echo '$txt' | mimencode -u -$encoding |";
+      $_ = &lt;PIPE&gt;;
+      close PIPE;
+      chomp;
+      }
+    print $_;
+  }
+  }</pre><p>Store this script a file and make the file executable (in the example below we will
+            assume it is stored in /usr/bin/decode_subjheader ) In procmail we can then use formmail
+            to first extract the subject header and then run that header through this perl script to
+            get the decoded subject</p><p>For example the helper script can be used as:</p><pre class="programlisting">SUBJECT = `formail -xSubject: | /usr/bin/decode_subjheader`
+:0
+* SUBJECT ?? (Newsletter.*)
+$NEWSLETTER</pre><p>The recipe above will first extract the subject header from the mail and run it
+            through our decoder perl script and then store the decoded header in the variable
+            SUBJECT. </p><p>The details of the filtering rules are explained in Table <a class="xref" href="appendix.procmail.html#tbl.procmail-filt-details" title="Table B.1. Explanation of filtering rules">Table B.1, “Explanation of filtering rules”</a></p><div class="table" id="tbl.procmail-filt-details"><p class="title"><strong>Table B.1. Explanation of filtering rules</strong></p><div class="table-contents"><table summary="Explanation of filtering rules" border="1"><colgroup><col class="c1"/><col class="c2"/></colgroup><tbody><tr><td>
+                            <p><code class="code">:0</code></p>
+                        </td><td>
+                            <p>Begin a new rule</p>
+                        </td></tr><tr><td>
+                            <p><code class="code">*</code></p>
+                        </td><td>
+                            <p>Begin a new condition</p>
+                        </td></tr><tr><td>
+                            <p><code class="code">SUBJECT ??</code></p>
+                        </td><td>
+                            <p>Match the variable SUBJECT to</p>
+                        </td></tr><tr><td>
+                            <p><code class="code">(Newsletter.*)</code></p>
+                        </td><td>
+                            <p>… any subject line starting with “Newsletter”</p>
+                        </td></tr><tr><td>
+                            <p><code class="code">$NEWSLETTER</code></p>
+                        </td><td>
+                            <p>If the filter matches then store it in the folder pointed to by
+                                the content of the variable</p>
+                        </td></tr></tbody></table></div></div><br class="table-break"/></div></div><div class="navfooter"><hr/><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="apas04.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="apbs02.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Example 4 </td><td width="20%" align="center"><a accesskey="h" href="oxygen-main.html">Home</a></td><td width="40%" align="right" valign="top"> How to create filter that matches on any of several rules (creating an “OR”
+            rule)</td></tr></table></div><div class="footer">WebHelp output generated by<a href="http://www.oxygenxml.com" target="_blank"><span class="oXygenLogo"><img src="oxygen-webhelp/resources/img/LogoOxygen100x22.png" alt="Oxygen"/></span><span class="xmlauthor">XML Author</span></a>.
+        </div>    <script type="text/javascript">
+        <!--
+            function expand(){
+                if (parent.tocwin){
+                    parent.tocwin.expandToTopic(window.location.href, this.getAttribute('href'));
+                }
+            }
+            var aArray = document.getElementsByTagName('a');
+            var i;
+            for (i = 0; i< aArray.length; i++){
+              aArray[i].onclick = expand;
+            }
+        -->
+    </script> 
+    <div id="productInfo" style="display:none;">
+        <span id="oxy_productID"></span>
+        <span id="oxy_productVersion"></span>
+    </div>
+    <div id="loginData" style="display: none">
+		<span class="bt_close" title="Close"></span>
+		<form action="" target="passwordIframe" method="POST" name="form_login" onsubmit="return loggInUser();" id="loginFormData" autocomplete="on" >
+			<input type="hidden" id="reloadComments" value="yes"/>
+			<table class="login">
+				<thead>
+					<tr>
+						<td colspan="2">
+							<span id="l_login2">
+							<script type="text/javascript">$('#l_login2').html(getLocalization('label.login'));</script>			
+							</span>
+						</td>
+					</tr>
+					<tr>
+						<td colspan="2">
+							<div id="loginResponse"></div>
+						</td>
+					</tr>
+				</thead>
+				
+				<tr>
+					<td>
+						<span id="l_userName">
+							<script type="text/javascript">$('#l_userName').html(getLocalization('label.userName'));</script>			
+						</span>						
+					</td>
+					<td><input name="usernameW" type="text" id="myUserName"  autocomplete="on" required="required" autofocus="autofocus" /></td>
+				</tr>
+				<tr>
+					<td>
+						<span id="l_pswd">
+							<script type="text/javascript">$('#l_pswd').html(getLocalization('label.pswd'));</script>			
+						</span>
+					</td>
+					<td><input name="passwordW" type="password" id="myPassword" autocomplete="on" required="required" /></td>
+				</tr>
+				<tr>
+					<td colspan="2" align="left">									
+					<span id="ll_remember">
+							<script type="text/javascript">
+								$('#ll_remember').html(getLocalization('label.rememberme'));
+							</script>			
+						</span>
+						&nbsp;&nbsp;&nbsp;
+							<input name="myLoginRemember" type="checkbox" class="ck" id="myRemember" value="no"/>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2" align="center">
+					<input id="l_bt_submit_log" type="submit" value="Submit" name="loginFormButton"/>
+					
+					<script type="text/javascript">$('#l_bt_submit_log').attr('value',getLocalization('label.login'));</script>
+					<span class="btnHGlue"></span>
+					<input class="bt_cancel" id="l_cancelLog" type="button" value="Cancel" name="loginFormButton"/>												
+					<script type="text/javascript">$('#l_cancelLog').attr('value',getLocalization('label.cancel'));</script>
+			</td>
+				</tr>
+			</table>
+			<div class="loginAlternative">
+				<span id="link_lostPwd" onclick="showLostPwd()">
+					<script type="text/javascript">$('#link_lostPwd').html(getLocalization('label.lostPswd'));</script>
+				</span> 
+				<span id="link_signUp" onclick="showSignUp()">
+					<script type="text/javascript">$('#link_signUp').html(getLocalization('label.signUp'));</script>
+				</span>
+			</div>
+			
+		</form>
+		<iframe id="passwordIframe" name="passwordIframe" style='display:none'></iframe>
+	</div>
+	<div id="commentsContainer"></div>
+                 </body></html>

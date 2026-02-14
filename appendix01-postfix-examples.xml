@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?hard-pagebreak?>
+<appendix 
+    xmlns="http://docbook.org/ns/docbook" 
+    revision="$Id: appendix01-postfix-examples.xml 50 2012-01-25 01:54:48Z ljp $"
+    xmlns:xlink="http://www.w3.org/1999/xlink" 
+    version="5.0" 
+    xml:id="appendix.postfix-examples">
+    
+    <title>Postfix configuration examples</title>
+    <para>One key to configure postfix <acronym>SMTPD</acronym> access is to understand the configurations directive
+        smtpd_recipient_restrictions. Below are two examples on how this can be used. Remember that
+        the order of the settings in this configuration is important. Postfix will execute them
+        sequentially</para>
+    <sect1>
+        <title>Example 1</title>
+        <para>The default settings will only allow anyone on the same subnetwork as the server to
+            send relay mail through</para>
+        <programlisting>mynetworks_style = subnet # only allow clients on the same subnet to connect
+
+smtpd_recipient_restrictions = 
+  permit_mynetworks
+  reject_unauth_destination</programlisting>
+    </sect1>
+    <sect1>
+        <title>Example 2</title>
+        <para>Changing the mynetwork_style to only allow password less logins originating from the
+            same server and require (SASL) password from all other logins are safer and can be done
+            by this</para>
+        <programlisting>mynetworks_style = host
+            
+smtpd_recipient_restrictions = 
+  permit_mynetworks
+  permit_sasl_authenticated
+  reject_unauth_destination</programlisting>
+    </sect1>
+    <sect1>
+        <title>Example 3</title>
+        <para>Allow clients on the local machine (host) to connect and send relay mails without
+            logging in. Force external clients to use <acronym>SSL/TLS</acronym> before allowing them to login.</para>
+        <programlisting>mynetworks_style = host
+
+# sasl
+smtpd_sasl_auth_enable = yes
+
+# tls
+#
+smtpd_tls_security_level = may
+smtpd_tls_loglevel = 1
+smtpd_tls_cert_file = &lt;/path/to/crt.crt>
+smtpd_tls_key_file = &lt;/path/to/key.key>
+
+# Only expose the AUTH command after an encrypted <acronym>SSL/TLS</acronym> 
+# session is established
+smtpd_tls_auth_only = yes
+smtpd_tls_session_cache_database = 
+  btree:/usr/local/etc/postfix/smtpd_tls_scache
+
+smtpd_recipient_restrictions = 
+  permit_mynetworks
+  permit_sasl_authenticated
+  reject_unauth_destination           
+        </programlisting>
+    </sect1>
+    <sect1>
+        <title>Example 4</title>
+        <para>This setup requires password authentication from both local and remote users but only
+            require <acronym>SSL/TLS</acronym> from remote users</para>
+        <programlisting>#being strict on mynetworks isn't important for this setup, but:
+mynetworks_style = host
+
+# sasl
+smtpd_sasl_auth_enable = yes
+
+# tls
+#
+smtpd_tls_security_level = may
+smtpd_tls_loglevel = 1
+smtpd_tls_cert_file = &lt;/path/to/crt.crt>
+smtpd_tls_key_file = &lt;/path/to/key.key>
+smtpd_tls_session_cache_database = 
+  btree:/var/lib/postfix/smtpd_tls_scache
+
+smtpd_recipient_restrictions = 
+  #allow anyone delivering mail to this host:
+  permit_auth_destination
+  #otherwise, allow authenticated connections from localhost
+  check_client_access hash:/usr/local/etc/postfix/access_client
+  #otherwise, demand both authentication and encryption:
+  reject_plaintext_session
+  permit_sasl_authenticated
+  reject</programlisting>
+        <para><filename>/usr/local/etc/postfix/access_client</filename> should look like
+            this:</para>
+        <programlisting># connections from 127.x.x.x must authenticate
+127  permit_sasl_authenticated, reject</programlisting>
+    </sect1>
+</appendix>

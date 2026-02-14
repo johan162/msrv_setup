@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.oasis-open.org/docbook/xml/5.0/rng/docbookxi.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<article xmlns="http://docbook.org/ns/docbook"
+        xmlns:xi="http://www.w3.org/2001/XInclude"
+        xmlns:xlink="http://www.w3.org/1999/xlink" 
+        version="5.0" 
+        revision="$Id: mailsetup-article.xml 43 2012-01-16 21:45:57Z ljp $">
+    <info>
+        <title>The Complete OpenSuSE Mail Server</title>
+        <subtitle>... or how  to really understand a full IMAP/SMTP/HTTPS/Webmail setup</subtitle>
+        <releaseinfo>Version 0.1</releaseinfo>
+        <author>
+            <personname>Johan Persson</personname>
+            <email>johan162@gmail.com</email>
+        </author>
+
+        <copyright>
+            <year>2011</year>
+            <holder>Johan Persson</holder>
+        </copyright>
+    </info>
+    
+    <xi:include href="section01.xml" parse="xml"/>
+    <xi:include href="section02.xml" parse="xml"/>
+    <xi:include href="section03.xml" parse="xml"/>
+    <xi:include href="section04.xml" parse="xml"/>
+    <xi:include href="section05.xml" parse="xml"/>
+    <xi:include href="section06.xml" parse="xml"/>
+    <xi:include href="section07.xml" parse="xml"/>
+    <xi:include href="section08.xml" parse="xml"/>
+    <xi:include href="section09.xml" parse="xml"/>
+    <xi:include href="section10.xml" parse="xml"/>
+    <xi:include href="section11.xml" parse="xml"/>
+     
+    <xi:include href="appendix01-postfix-examples.xml" parse="xml"/>
+    <xi:include href="appendix02-procmail.xml" parse="xml"/>
+    <xi:include href="appendix03-dovecot.xml" parse="xml"/>
+    <xi:include href="appendix04-postfix-complete.xml" parse="xml"/>
+    <xi:include href="appendix05-openssl.xml" parse="xml"/>
+    <xi:include href="appendix06-apache.xml" parse="xml"/>
+    
+</article>

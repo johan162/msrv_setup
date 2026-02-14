@@ -1,0 +1,109 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Setting up fetchmail</title><meta name="generator" content="DocBook XSL Stylesheets V1.77.1"/><link rel="home" href="oxygen-main.html" title="The Complete OpenSuSE Mail Server"/><link rel="up" href="oxygen-main.html" title="The Complete OpenSuSE Mail Server"/><link rel="prev" href="ar01s06.html" title="Setting up postfix"/><link rel="next" href="ar01s08.html" title="Setting up spamassassin"/><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><link rel="stylesheet" type="text/css" href="oxygen-webhelp/resources/css/webhelp_topic.css"/>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/jquery.js"> </script>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/jquery-ui.custom.min.js"> </script>
+<script type="text/javascript" src="oxygen-webhelp/resources/js/frames_redirect.js"> </script>                                        <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/localization/strings.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/comments-functions.js"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/php/cnf.php"> </script>                         <script type="text/javascript" charset="utf-8" src="oxygen-webhelp/resources/js/init.js"> </script>
+<script type="text/javascript"><!--
+    var prefix = "oxygen-main";
+    var ratingFile = "";
+    redirectToToc(window.location.search);
+    function highlightSearchTerm(){
+        if(parent.termsToHighlight != null){
+        // highlight each term in the content view  
+          for(i = 0 ; i < parent.termsToHighlight.length ; i++){        
+              $('*', window.parent.contentwin.document).highlight(parent.termsToHighlight[i]);
+          }
+        }
+    }
+//--></script>
+</head><body onload="highlightSearchTerm()"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Setting up fetchmail</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ar01s06.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s08.html">Next</a></td></tr></table><hr/></div><span class="frames"><script type="text/javascript"><!--                    
+									 if (top === self) { 
+							        document.write("<div class='wFrames'><a href=" + getPath(location.pathname) + ">With Frames</a></div>");							
+						        } else {
+						          //document.write("<div class='wFramesPerma'><a href=" + getPath(location.pathname) + " target='_top' title='link to this page'>Link</a></div>");						
+						        }       
+                  --></script></span>
+<div class="sect1" id="d5e1733"><div class="titlepage"><div><div><h2 class="title" style="clear: both">Setting up fetchmail</h2></div></div></div><p><span class="application">Fetchmail</span>:s role is to fetch mail from remote hosts to our
+        server and deliver the fetched mail locally. In order to fetch mail we must first setup a
+        configuration file for fetchmail with the remote servers and there credentials where we want
+        to fetch mail, this configuration file is <code class="filename">/etc/fetchmailrc</code>.</p><p>After fetchmail has logged in it will deliver the mails locally to our <acronym class="acronym">SMTP</acronym> server just as
+        if the mail had come from some remote <acronym class="acronym">SMTP</acronym> server connecting to us. </p><p>There is one thing to keep in mind here though and that is that fetchmail only handles
+        password when fetching mail. It cannot handle passwords in the local delivery. This means
+        that our postfix setup must accept incoming mails that should be delivered locally without
+        password (which is the normal). Since we have specified
+            <code class="literal">smtpd_recipient_restrictions</code> with the option
+            <code class="literal">permit_mynetworks</code> This will allow fetchmail to store mail locally
+        without providing a password. </p><p>To be really secure we should restrict this further by only allowing access from within
+        the server itself. This can be done by making sure that <code class="code">mynetworks_style=host</code>
+        is set and make sure that <code class="code">mynetworks</code> is empty since that configuration variable
+        has precedence (if that is set the <code class="code">mynetworks_style</code> will be ignored).</p><div class="sect2" id="d5e1748"><div class="titlepage"><div><div><h3 class="title">Configuring fetchmail</h3></div></div></div><p>In the documentation for <span class="command"><strong>fetchmail</strong></span> there are several examples on
+            how to setup a basic configuration. So in this section we will show some examples of
+            more complex setup which isn't available in the fetchmail documentation. </p><p>The advantage (if any) with fetchmail configuration syntax is that it is quite
+            "chatty" and can be read almost as an English sentence.</p><p>Let's start with a very basic example. Assuming that the remote server is called
+                “<code class="uri">remotemail.com</code>” and the server uses POP3 (not <acronym class="acronym">IMAP</acronym>).
+            Furthermore we assume the username is “<code class="literal">joe</code>” (both remote and local)
+            and the password is “<code class="literal">secret</code>. </p><p>The following configuration line will handle this case:</p><p>
+            </p><pre class="programlisting">poll remotemail.com proto pop3 user "joe" there \ 
+with password "secret"  is "joe" here;</pre><p>
+        </p><p>Let's now do a slightly more complex setup. In this setup we are connecting to an
+                <acronym class="acronym">IMAP</acronym> server over <acronym class="acronym">SSL/TSL</acronym> (meaning that we need
+            to connect on port 993) and we want to collect mail from both the
+                “<code class="literal">Inbox</code>” folder as well as the “<code class="literal">Junk</code>” mail
+            folder back to our server. </p><p>Furthermore we want to permanently delete mails that are rejected as spams by our own
+            postfix server when <span class="application">fetchmail</span> tries to deliver it.</p><p>
+            </p><pre class="programlisting">defaults
+        user "joe@remotemail.com" is "joe"
+        set no softbounce
+        antispam 501
+        bad-header accept
+
+poll imap.remotemail.com with proto <acronym class="acronym">IMAP</acronym> port 993:
+        <acronym class="acronym">SSL</acronym>        
+        folder 'inbox','Junk'
+        password "secret";</pre><p>
+        </p><p>There are a couple of unusual thing in this setup.</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>To make it more readable we first set up some default values that apply to all
+                    defined servers. We use this to first set the user we are collecting mail from.
+                    The second option requires some more explanations. If we fetch a mail from the
+                    remote server and when we try to deliver it to our own postfix server it is
+                    refused since it is considered a wrongly formatted mail. In this case fetchmail
+                    will normally leave the mail on the remote server. With this option set
+                    fetchmail will remove the mail from the remote server even when it was rejected
+                    by our own server, effectively deleting the mail without anyone ever receiving
+                    it. </p><p>This might sound like a bad thing to do. However mail that are so wrongly
+                    formatted that postfix refuses to accept it as a proper mail are to 99.999%
+                    spams.  </p></li><li class="listitem"><p>The <code class="literal">antispam 501</code> line tells fetchmail to interpret an 501
+                    error (Bad address syntax) from the local postfix server not as an error but as
+                    a signal that the delivered mail is interpreted as a spam by postfix. It will
+                    then discard the message and since “<code class="code">set no softbounce</code>” is in
+                    effect. The mail will then also be deleted from the remote server. </p><p>A common cause of this is that postfix with default settings refuses addresses
+                    which begin by an “-“ (hyphen). This might be unusual but it is actually allowed
+                    (see RFC 5321, RFC 5322) so in this case postfix is a bit picky.</p></li><li class="listitem"><p>The “<code class="literal">bad-header accept</code>” command allows
+                        <span class="command"><strong>fetchmail</strong></span> to collect mail even if some of the headers are
+                    incorrect.</p></li><li class="listitem"><p>We then specify that we connect to the <acronym class="acronym">IMAP</acronym> server on port
+                    993 and enable <acronym class="acronym">SSL</acronym>.</p></li><li class="listitem"><p>To get mail from several folders we use the “<code class="code">folder</code>” command and
+                    then just list the folders we want to collect the mail from</p></li></ul></div><p>Before starting fetchmail check that you are happy with the default configuration in
+                <code class="filename">/etc/sysconfig/fetchmail</code> such as poll interval. (Just keep in
+            mind that some <acronym class="acronym">ISP</acronym> gets a bit unhappy if you try to poll there server
+            every minute or so.) </p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="/usr/local/share/oxygen14.0/frameworks/docbook/xsl/images/tip.png"/></td><th align="left">Tip</th></tr><tr><td align="left" valign="top"><p>There is also a GUI tool <span class="command"><strong>fetchmailconf</strong></span> that can be used to ease
+                the creation of fetchmail configuration files. You can install this with </p><p>
+                </p><pre class="screen">$&gt; sudo zipper install fetchmailconf</pre><p>
+            </p></td></tr></table></div></div><div class="sect2" id="d5e1801"><div class="titlepage"><div><div><h3 class="title">Starting and enabling fetchmail at boot time</h3></div></div></div><p>To manually start <span class="command"><strong>fetchmail</strong></span> give the command </p><pre class="screen">$&gt; chkconfig –add fetchmail</pre><p>You should also add fetchmail as a service that is started at the same time the server
+            boots. You can do this via Yast or by giving the command</p><pre class="screen">$&gt; chkconfig –add fetchmail</pre><p>This command will start fetchmail in the default run levels (most likely 3- multiuser
+            with network and 5 - full X-window client)</p></div></div><div class="navfooter"><hr/><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s06.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s08.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Setting up postfix </td><td width="20%" align="center"><a accesskey="h" href="oxygen-main.html">Home</a></td><td width="40%" align="right" valign="top"> Setting up spamassassin</td></tr></table></div><div class="footer">WebHelp output generated by<a href="http://www.oxygenxml.com" target="_blank"><span class="oXygenLogo"><img src="oxygen-webhelp/resources/img/LogoOxygen100x22.png" alt="Oxygen"/></span><span class="xmlauthor">XML Author</span></a>.
+        </div>    <script type="text/javascript">
+        <!--
+            function expand(){
+                if (parent.tocwin){
+                    parent.tocwin.expandToTopic(window.location.href, this.getAttribute('href'));
+                }
+            }
+            var aArray = document.getElementsByTagName('a');
+            var i;
+            for (i = 0; i< aArray.length; i++){
+              aArray[i].onclick = expand;
+            }
+        -->
+    </script> 
+</body></html>

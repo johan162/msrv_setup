@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>Appendix B - Procmail recipes</title><link rel="stylesheet" type="text/css" href="article.css"/><meta name="generator" content="DocBook XSL Stylesheets V1.78.1"/></head><body><div class="appendix"><div class="titlepage"><div><div><h1 class="title"><a id="appendix.procmail"/>Appendix B - Procmail recipes</h1></div></div></div>
+    
+    <p>The first line of a procmail filter always starts with “:0” and the remaining letters
+        controls the filtering process. </p>
+    <p>For example “h” will only filter on the mail headers, “c” will make a copy of the mail so
+        that it is available to filters after the current filter. If there is no “c” then the filter
+        will consume the mail and processing stops here and no more filters will be applied to the
+        mail.</p>
+    <p>Five good sites to find out more about how to write procmail recipes are:</p>
+    <div class="itemizedlist"><ul class="itemizedlist"><li class="listitem">
+            <p><code class="uri">http://pm-doc.sourceforge.net/doc/</code> (The official procmail
+                documentation)</p>
+        </li><li class="listitem">
+            <p><code class="uri">http://partmaps.org/era/procmail/mini-faq.html</code> (Procmail FAQ)</p>
+        </li><li class="listitem">
+            <p><code class="uri">http://www.ii.com/internet/robots/procmail/qs/</code></p>
+        </li><li class="listitem">
+            <p><code class="uri">http://userpages.umbc.edu/~ian/procmail.html</code></p>
+        </li><li class="listitem">
+            <p><code class="uri">http://lipas.uwasa.fi/~ts/info/proctips.html</code></p>
+        </li></ul></div>
+    <div class="sect1"><div class="titlepage"><div><div><h1 class="title"><a id="idp49638768"/>B.1  The problem of filtering on the “Subject:” field</h1></div></div></div>
+        
+        <p>While at first it might seem simple enough to filter out certain mails with a specific
+            subject either as spam or some other reason it is in practice a lot more complicated.
+            The problem is that the subject does not always have to be in plain text. Instead it is
+            very common to have the subject in either quoted printable or in base64. Such an encoded
+            string looks like =?charset?format?encoded text?= (this format is more specifically
+            described in RFC1522) and it can also be followed by some text in plain format and then
+            again by some encoded text. For obvious reason a lot of spam uses this format to make it
+            much more difficult to do simple text matching.</p>
+        <p>Unfortunately there is no easy way around this and procmail does not have any built in
+            “decoding” functionality so this has to be done manually.</p>
+        <p>To help with this the following small perl script can be used as a helper script. This
+            script has been floated on the net and the author is unfortunately unknown to me (if you
+            know please let me now and the proper credit will be given)</p>
+        <pre class="programlisting">#!/usr/bin/perl
+#
+# Perl script to decode a subject string possible encoded with RFC1522 
+# quoted printable or base64 encoding.
+# Author: Unknown.
+
+while (&lt;&gt;) {
+  chomp;
+  s/^[ \t]//;
+  foreach (split(/(=[?].*?[?][BQ][?].*?[?]=)/i)) {
+    if (($charset, $encoding, $txt) = /=[?](.*?)[?]([bq])[?](.*?)[?]=/i) {
+      $encoding =~ tr/[BQ]/[bq]/;
+      open PIPE, "echo '$txt' | mimencode -u -$encoding |";
+      $_ = &lt;PIPE&gt;;
+      close PIPE;
+      chomp;
+      }
+    print $_;
+  }
+  }</pre>
+        <p>Store this script a file and make the file executable (in the example below we will
+            assume it is stored in /usr/bin/decode_subjheader ) In procmail we can then use formmail
+            to first extract the subject header and then run that header through this perl script to
+            get the decoded subject</p>
+        <p>For example the helper script can be used as:</p>
+        <pre class="programlisting">SUBJECT = `formail -xSubject: | /usr/bin/decode_subjheader`
+:0
+* SUBJECT ?? (Newsletter.*)
+$NEWSLETTER</pre>
+        <p>The recipe above will first extract the subject header from the mail and run it
+            through our decoder perl script and then store the decoded header in the variable
+            SUBJECT. </p>
+        <p>The details of the filtering rules are explained in Table <a class="xref" href="apb.html#tbl.procmail-filt-details" title="Table B.1. Explanation of filtering rules">Table B.1</a></p>
+        <div class="table"><a id="tbl.procmail-filt-details"/><p xmlns="" class="formal-object-title"><span class="label">Table B.1: </span><span class="title">Explanation of filtering rules</span></p><div class="table-contents">
+            
+            <table summary="Explanation of filtering rules" border="1"><colgroup><col class="c1"/><col class="c2"/></colgroup><tbody><tr><td>
+                            <p><code class="code">:0</code></p>
+                        </td><td>
+                            <p>Begin a new rule</p>
+                        </td></tr><tr><td>
+                            <p><code class="code">*</code></p>
+                        </td><td>
+                            <p>Begin a new condition</p>
+                        </td></tr><tr><td>
+                            <p><code class="code">SUBJECT ??</code></p>
+                        </td><td>
+                            <p>Match the variable SUBJECT to</p>
+                        </td></tr><tr><td>
+                            <p><code class="code">(Newsletter.*)</code></p>
+                        </td><td>
+                            <p>… any subject line starting with “Newsletter”</p>
+                        </td></tr><tr><td>
+                            <p><code class="code">$NEWSLETTER</code></p>
+                        </td><td>
+                            <p>If the filter matches then store it in the folder pointed to by
+                                the content of the variable</p>
+                        </td></tr></tbody></table>
+        </div></div>
+    </div>
+    
+    
+    
+    
+    
+</div></body></html>
