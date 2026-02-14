@@ -16,10 +16,10 @@
         <title>Mail server overview</title>
         <mediaobject>            
             <imageobject role="fo">
-                <imagedata fileref="figures/mail-overview.png" scalefit="1" width="50%" contentwidth="50%"/>
+                <imagedata fileref="../figures/mail-overview.png" scalefit="1" width="50%" contentwidth="50%"/>
             </imageobject>
             <imageobject role="html">
-                <imagedata fileref="figures/mail-overview.png" contentwidth="600px"/>
+                <imagedata fileref="../figures/mail-overview.png" contentwidth="600px"/>
             </imageobject>            
         </mediaobject>
     </figure>
@@ -117,10 +117,10 @@
                 <title>The dual role of postfix</title>
                 <mediaobject>
                     <imageobject role="fo">
-                        <imagedata fileref="figures/smtp-smtpd.png" scalefit="1" width="50%" contentwidth="50%"/>
+                        <imagedata fileref="../figures/smtp-smtpd.png" scalefit="1" width="50%" contentwidth="50%"/>
                     </imageobject>
                     <imageobject role="html">
-                        <imagedata fileref="figures/smtp-smtpd.png" scale="80"/>
+                        <imagedata fileref="../figures/smtp-smtpd.png" scale="80"/>
                     </imageobject>
                     
                 </mediaobject>
@@ -229,10 +229,10 @@
             <title>fetchmail process overview</title>
             <mediaobject>
                 <imageobject role="fo">
-                    <imagedata fileref="figures/fetchmail-view.png" scalefit="1" width="50%" contentwidth="50%"/>
+                    <imagedata fileref="../figures/fetchmail-view.png" scalefit="1" width="50%" contentwidth="50%"/>
                 </imageobject>
                 <imageobject role="html">
-                    <imagedata fileref="figures/fetchmail-view.png" scale="90" />
+                    <imagedata fileref="../figures/fetchmail-view.png" scale="90" />
                 </imageobject>
                 
             </mediaobject>
@@ -269,10 +269,10 @@
                 <title>Interaction between Postfix and procmail</title>
                 <mediaobject>
                     <imageobject role="fo">
-                        <imagedata fileref="figures/postfix-procmail.png" scalefit="1" width="50%" contentwidth="50%"/>
+                        <imagedata fileref="../figures/postfix-procmail.png" scalefit="1" width="50%" contentwidth="50%"/>
                     </imageobject>
                     <imageobject role="html">
-                        <imagedata fileref="figures/postfix-procmail.png" scale="80"/>
+                        <imagedata fileref="../figures/postfix-procmail.png" scale="80"/>
                     </imageobject>                    
                 </mediaobject>
             </figure>
@@ -309,10 +309,10 @@
             <title>Roundcube Webmail client</title>
             <mediaobject>
                 <imageobject role="fo">
-                    <imagedata fileref="figures/roundcube-orig.jpg" scalefit="1"  width="70%" contentwidth="70%"/>
+                    <imagedata fileref="../figures/roundcube-orig.jpg" scalefit="1"  width="70%" contentwidth="70%"/>
                 </imageobject>
                 <imageobject role="html">
-                    <imagedata fileref="figures/roundcube-orig.jpg" scale="95"/>
+                    <imagedata fileref="../figures/roundcube-orig.jpg" scale="95"/>
                 </imageobject>                
             </mediaobject>
         </figure>

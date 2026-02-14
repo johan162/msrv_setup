@@ -31,7 +31,7 @@
         defined in this file will take on there default values.</para>
     <sect1>
         <title>main.cf</title>
-        <programlisting linenumbering="numbered"><xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="src/main.cf" parse="text"/></programlisting>
+        <programlisting linenumbering="numbered"><xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="../src/main.cf" parse="text"/></programlisting>
     </sect1>
     <sect1>
         <title>master.cf</title>

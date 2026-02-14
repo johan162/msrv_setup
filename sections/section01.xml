@@ -3,6 +3,9 @@
 <?hard-pagebreak?>
 <sect1 xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
     version="5.0" revision="$Id: section01.xml 56 2012-07-23 19:38:49Z ljp $">
+
+   
+
     <title>Introduction</title>
 
     <para>With the almost ubiquitous presence of mobile devices it becomes crucial to be able to
@@ -104,10 +107,10 @@
                     <title>Chosing text server when installing OpenSuSE</title>
             <mediaobject>
                 <imageobject role="fo">
-                    <imagedata fileref="figures/suse-text-server.png" scalefit="1" width="50%" contentwidth="50%"/>
+                    <imagedata fileref="../figures/suse-text-server.png" scalefit="1" width="50%" contentwidth="50%"/>
                 </imageobject>
                 <imageobject role="html">
-                    <imagedata fileref="figures/suse-text-server.png" contentwidth="80%"/>
+                    <imagedata fileref="../figures/suse-text-server.png" contentwidth="80%"/>
                 </imageobject>                
             </mediaobject>
                 </figure>

@@ -12,10 +12,10 @@
         <title>Steps in the setup process</title>       
         <mediaobject>
             <imageobject role="fo">
-                <imagedata fileref="figures/setup-process.png" scalefit="1"  width="45%" contentwidth="45%"/>
+                <imagedata fileref="../figures/setup-process.png" scalefit="1"  width="45%" contentwidth="45%"/>
             </imageobject>
             <imageobject role="html">
-                <imagedata fileref="figures/setup-process.png" scalefit="1" contentwidth="700px"/>
+                <imagedata fileref="../figures/setup-process.png" scalefit="1" contentwidth="700px"/>
             </imageobject>            
         </mediaobject>
     </figure>    
@@ -474,11 +474,11 @@
             <title>SSL/TLS Certificate signing process</title>
             <mediaobject>
                 <imageobject role="fo">
-                    <imagedata fileref="figures/cert-key-overview.png" scalefit="1" width="50%"
+                    <imagedata fileref="../figures/cert-key-overview.png" scalefit="1" width="50%"
                         contentwidth="50%"/>
                 </imageobject>
                 <imageobject role="html">
-                    <imagedata fileref="figures/cert-key-overview.png" scale="80" />
+                    <imagedata fileref="../figures/cert-key-overview.png" scale="80" />
                 </imageobject>
                 
             </mediaobject>
@@ -531,11 +531,11 @@
                 <title>Certificate hierarchy</title>
                 <mediaobject>
                     <imageobject role="fo">
-                        <imagedata fileref="figures/cert-key-hierarchy.png" scalefit="1" width="50%"
+                        <imagedata fileref="../figures/cert-key-hierarchy.png" scalefit="1" width="50%"
                             contentwidth="50%"/>
                     </imageobject>
                     <imageobject role="html">
-                        <imagedata fileref="figures/cert-key-hierarchy.png" scale="80" />
+                        <imagedata fileref="../figures/cert-key-hierarchy.png" scale="80" />
                     </imageobject>
                 </mediaobject>
             </figure>

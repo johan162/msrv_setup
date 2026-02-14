@@ -47,13 +47,14 @@ XMLLINT := xmllint
 XSLT_PARAMS := --xinclude
 
 # Source files
-SECTION_FILES := $(wildcard section*.xml)
-APPENDIX_FILES := $(wildcard appendix*.xml)
+SECTION_FILES := $(wildcard sections/section*.xml)
+APPENDIX_FILES := $(wildcard appendixes/appendix*.xml)
 SOURCE_FILES := $(MAIN_DOCUMENT) $(SECTION_FILES) $(APPENDIX_FILES)
 
 # Figures and images
 FIGURES := $(wildcard figures/*.png figures/*.jpg)
 ADMON_IMAGES := $(wildcard css_stylesheets/admon*.png)
+FOP_ADMON_IMAGES := $(wildcard xsl_stylesheets/images/*.png)
 CSS_IMAGES := $(wildcard css_stylesheets/img/*)
 
 # Default target
@@ -187,12 +188,15 @@ chunk: $(CHUNK_DIR)
 .PHONY: pdf
 pdf: $(PDF_DIR) $(TMP_DIR)
 	@echo "Generating PDF..."
-	@# Prepare temporary directory
-	@mkdir -p $(TMP_DIR)/figures $(TMP_DIR)/src
-	@cp -f $(SOURCE_FILES) $(TMP_DIR)/
+	@# Prepare temporary directory with subdirectories
+	@mkdir -p $(TMP_DIR)/figures $(TMP_DIR)/src $(TMP_DIR)/sections $(TMP_DIR)/appendixes
+	@mkdir -p $(TMP_DIR)/xsl_stylesheets/images
+	@cp -f $(MAIN_DOCUMENT) $(TMP_DIR)/
+	@cp -f $(SECTION_FILES) $(TMP_DIR)/sections/ 2>/dev/null || true
+	@cp -f $(APPENDIX_FILES) $(TMP_DIR)/appendixes/ 2>/dev/null || true
 	@cp -f $(FIGURES) $(TMP_DIR)/figures/ 2>/dev/null || true
 	@cp -f src/* $(TMP_DIR)/src/ 2>/dev/null || true
-	@cp -f $(ADMON_IMAGES) $(TMP_DIR)/ 2>/dev/null || true
+	@cp -f $(FOP_ADMON_IMAGES) $(TMP_DIR)/xsl_stylesheets/images/ 2>/dev/null || true
 	@cp -f css_stylesheets/checkmark-green.png $(TMP_DIR)/checkmark.png 2>/dev/null || true
 	@cp -f css_stylesheets/checkmark-plain.gif $(TMP_DIR)/checkmark-plain.gif 2>/dev/null || true
 	@# Generate FO (Formatting Objects) from XML

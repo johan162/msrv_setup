@@ -19,24 +19,24 @@
             <holder>Johan Persson</holder>
         </copyright>
     </info>
-    
-    <xi:include href="section01.xml" parse="xml"/>
-    <xi:include href="section02.xml" parse="xml"/>
-    <xi:include href="section03.xml" parse="xml"/>
-    <xi:include href="section04.xml" parse="xml"/>
-    <xi:include href="section05.xml" parse="xml"/>
-    <xi:include href="section06.xml" parse="xml"/>
-    <xi:include href="section07.xml" parse="xml"/>
-    <xi:include href="section08.xml" parse="xml"/>
-    <xi:include href="section09.xml" parse="xml"/>
-    <xi:include href="section10.xml" parse="xml"/>
-    <xi:include href="section11.xml" parse="xml"/>
+     <?hard-pagebreak?>
+    <xi:include href="sections/section01.xml" parse="xml"/>
+    <xi:include href="sections/section02.xml" parse="xml"/>
+    <xi:include href="sections/section03.xml" parse="xml"/>
+    <xi:include href="sections/section04.xml" parse="xml"/>
+    <xi:include href="sections/section05.xml" parse="xml"/>
+    <xi:include href="sections/section06.xml" parse="xml"/>
+    <xi:include href="sections/section07.xml" parse="xml"/>
+    <xi:include href="sections/section08.xml" parse="xml"/>
+    <xi:include href="sections/section09.xml" parse="xml"/>
+    <xi:include href="sections/section10.xml" parse="xml"/>
+    <xi:include href="sections/section11.xml" parse="xml"/>
      
-    <xi:include href="appendix01-postfix-examples.xml" parse="xml"/>
-    <xi:include href="appendix02-procmail.xml" parse="xml"/>
-    <xi:include href="appendix03-dovecot.xml" parse="xml"/>
-    <xi:include href="appendix04-postfix-complete.xml" parse="xml"/>
-    <xi:include href="appendix05-openssl.xml" parse="xml"/>
-    <xi:include href="appendix06-apache.xml" parse="xml"/>
+    <xi:include href="appendixes/appendix01-postfix-examples.xml" parse="xml"/>
+    <xi:include href="appendixes/appendix02-procmail.xml" parse="xml"/>
+    <xi:include href="appendixes/appendix03-dovecot.xml" parse="xml"/>
+    <xi:include href="appendixes/appendix04-postfix-complete.xml" parse="xml"/>
+    <xi:include href="appendixes/appendix05-openssl.xml" parse="xml"/>
+    <xi:include href="appendixes/appendix06-apache.xml" parse="xml"/>
     
 </article>

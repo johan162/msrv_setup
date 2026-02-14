@@ -265,16 +265,30 @@ Generated documentation appears in the `output/` directory:
 .
 ├── README.md                          # This file
 ├── Makefile                           # Build automation
+├── Dockerfile                         # Container build definition
+├── .dockerignore                      # Docker build exclusions
 ├── build.xml                          # Original Phing build script (legacy)
 ├── mailsetup.xpr                      # Oxygen XML Editor project file (optional)
 ├── mailsetup-article.xml              # Main document entry point
-├── section01.xml - section11.xml      # Document sections
-├── appendix01-postfix-examples.xml    # Configuration examples appendix
-├── appendix02-procmail.xml            # Procmail configuration
-├── appendix03-dovecot.xml             # Dovecot configuration
-├── appendix04-postfix-complete.xml    # Complete postfix config
-├── appendix05-openssl.xml             # OpenSSL examples
-├── appendix06-apache.xml              # Apache configuration
+├── sections/                          # Document sections
+│   ├── section01.xml                  # Introduction
+│   ├── section02.xml                  # Component Overview
+│   ├── section03.xml                  # Setup Process
+│   ├── section04.xml                  # Apache HTTP Server
+│   ├── section05.xml                  # Dovecot IMAP Server
+│   ├── section06.xml                  # Postfix SMTP Server
+│   ├── section07.xml                  # Fetchmail
+│   ├── section08.xml                  # SpamAssassin
+│   ├── section09.xml                  # Procmail
+│   ├── section10.xml                  # Roundcube Webmail
+│   └── section11.xml                  # References
+├── appendixes/                        # Configuration appendixes
+│   ├── appendix01-postfix-examples.xml    # Postfix examples
+│   ├── appendix02-procmail.xml            # Procmail configuration
+│   ├── appendix03-dovecot.xml             # Dovecot configuration
+│   ├── appendix04-postfix-complete.xml    # Complete postfix config
+│   ├── appendix05-openssl.xml             # OpenSSL examples
+│   └── appendix06-apache.xml              # Apache configuration
 ├── xsl_stylesheets/                   # Custom XSL transformations
 │   ├── html.xsl                       # HTML output customization
 │   ├── chunk.xsl                      # Chunked HTML customization
@@ -282,8 +296,10 @@ Generated documentation appears in the `output/` directory:
 │   └── epub.xsl                       # EPUB customization
 ├── css_stylesheets/                   # CSS styling for HTML output
 │   ├── article.css
-│   └── article-fancyterm.css
-├── figures/                           # Images and diagrams
+│   ├── article-fancyterm.css
+│   └── img/                           # CSS images
+├── figures/                           # Document images and diagrams
+├── src/                               # Example configuration files
 └── output/                            # Generated documentation (gitignored)
 ```
 
@@ -291,8 +307,8 @@ Generated documentation appears in the `output/` directory:
 
 The documentation uses **DocBook 5** with XInclude for modularity:
 - `mailsetup-article.xml` - Root document that includes all sections
-- `section*.xml` - Individual sections for each component
-- `appendix*.xml` - Detailed configuration examples
+- `sections/section*.xml` - Individual sections for each component
+- `appendixes/appendix*.xml` - Detailed configuration examples
 - Custom XSL stylesheets customize the DocBook output appearance
 
 **Note**: The `mailsetup.xpr` file is an Oxygen XML Editor project file from the original development environment. It's not required for building the documentation but is preserved to show the original editing workflow. You can safely ignore it if you're not using Oxygen XML Editor.

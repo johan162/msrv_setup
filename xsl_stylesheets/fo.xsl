@@ -196,9 +196,9 @@
     <!-- Should graphics be used for admonitions (notes, warnings)? 0 or 1 -->
     <xsl:param name="admon.graphics" select="1"/>
 
-    <!-- Directory where to find graphics. Full path from the root with trailing '/' -->
+    <!-- Directory where to find graphics. Relative path from project root with trailing '/' -->
     <xsl:param name="admon.graphics.path"
-        >/home/ljp/Documents/mailsetup/xsl_stylesheets/images/</xsl:param>
+        >xsl_stylesheets/images/</xsl:param>
 
     <!-- File extension for grphic files -->
     <xsl:param name="admon.graphics.extension" select="'.png'"/>
