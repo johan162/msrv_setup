@@ -74,6 +74,12 @@
         <para>Apart from the static analysis on headers and content of the mail spamassassin also
             has the ability to learn the particular words in typical spams. This later on helps
             spamassassin identify spams.</para>
+        <para>Keep in mind that spam filtering is not perfect - you will occasionally see false
+            positives (legitimate mail marked as spam) and false negatives (spam that gets through).
+            This is why we recommend periodically checking your spam folder rather than automatically
+            deleting suspected spam. Over time, as the Bayesian learning adapts to your specific mail
+            patterns, the accuracy will improve. The initial few weeks may require more manual review
+            as the system learns what spam looks like for you specifically.</para>
         <para>Bayes auto learning is enabled by default but you should also check that it is by
             checking that <literal>bayes_auto_learn 1</literal></para>
         <para>By default spamassassin learns word from mails and learns them as either spam or

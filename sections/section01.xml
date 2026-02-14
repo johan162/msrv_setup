@@ -57,6 +57,12 @@
             doing. Just taking random bits of code from "the net" might give, by sheer luck, a
             working setup but it might as likely have created an open relay for spammers to use
             (which is very bad).</para>
+        <para>This tutorial focuses on getting the server components properly configured and tested.
+            However, once your server is running, you'll need to configure your mail clients (phone,
+            tablet, desktop email applications) to connect to it. Each client will need the server
+            address, port numbers, your username and password, and must be set to use encrypted
+            connections (SSL/TLS). The troubleshooting appendix includes guidance on common client
+            configuration issues you might encounter.</para>
         <para>Especially the <acronym>SSL/TLS</acronym> setup using <acronym>openssl</acronym> will
             be covered and explained in more details than usual in descriptions like this since much
             information available on "the net" is just plain wrong or at best shows very, very,

@@ -197,6 +197,21 @@ FLUSH PRIVILEGES;</screen>
             <para>The final step in the setup is a test to make sure that the settings are correct.
                 Make sure that <emphasis role="bold">all</emphasis> these tests succeeds before
                 proceeding! </para>
+            <para>Once Roundcube is working, you have a fully functional web-based interface to your
+                mail. However, you'll likely also want to configure native mail clients on your
+                devices (smartphones, tablets, desktop applications like Thunderbird or Mail.app).
+                These clients connect directly to your Dovecot IMAP server (port 993 with SSL) and
+                Postfix SMTP server (port 587 or 25 with STARTTLS) using the same username and
+                password you use for Roundcube. The key advantage of IMAP is that all your devices
+                stay synchronized - marking a message read on your phone will show it as read in
+                Roundcube and on your desktop client.</para>
+            <para>Remember that your server certificates are self-signed, so when connecting your
+                first client, you'll need to explicitly accept the certificate warning. This is
+                expected behavior with self-signed certificates. Each client device will need to
+                accept the certificate once. If you find the warnings bothersome, you can install
+                your CA certificate on each device, or consider using Let's Encrypt certificates for
+                a production deployment (though this wasn't common practice when this guide was
+                written).</para>
 
         </listitem>
         <listitem>

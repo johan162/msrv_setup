@@ -77,6 +77,11 @@
                     (<application>MySQL</application>) for Roundcube to make use of. </para>
             </listitem>
         </orderedlist>
+    <para>Each of these steps includes testing procedures to verify that component works correctly
+        before moving to the next. Don't skip these tests - they help isolate problems to specific
+        components rather than trying to debug the entire system at once. If a test fails, review
+        the configuration for that component carefully before proceeding. The time spent verifying
+        each step will save considerable troubleshooting time later.</para>
     
 
     <sect2>

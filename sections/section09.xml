@@ -59,8 +59,13 @@
             who think that has spent too much time with mail servers) but the basic structure in
             this example file will get you a good start and will serve a good start for your own
             experiments. It would bring this tutorial too far off track to become a “How To Write
-            procmail Filter rules” as well. Refer to the procmail documentation for details.</para>
-        <para>In <xref xlink:href="#appendix.procmail"/> we also show some more example of procmail
+            procmail Filter rules” as well. Refer to the procmail documentation for details.</para>        <para>Don't be discouraged if procmail's syntax seems cryptic at first. The learning curve is
+            steep, but the example configurations provided should cover most common needs. Start with
+            the simple filtering rules shown here and add complexity gradually as you become
+            comfortable. When troubleshooting procmail rules, the log file (specified with LOGFILE in
+            your configuration) is invaluable - it shows exactly which rules matched and where each
+            mail ended up. If a rule isn't working as expected, first check the log to see if the
+            rule is being triggered at all.</para>        <para>In <xref xlink:href="#appendix.procmail"/> we also show some more example of procmail
             configuration recipes.</para>        
         <example><title>Template for a procmail configuration file</title><programlisting>#---------------------------------------------
 # Standard setup for extra logging

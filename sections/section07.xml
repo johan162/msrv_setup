@@ -100,6 +100,14 @@ poll imap.remotemail.com with proto <acronym>IMAP</acronym> port 993:
                 <filename>/etc/sysconfig/fetchmail</filename> such as poll interval. (Just keep in
             mind that some <acronym>ISP</acronym> gets a bit unhappy if you try to poll there server
             every minute or so.) </para>
+        <para>When you first set up fetchmail, start with manual testing rather than having it run
+            automatically as a daemon. Run <command>fetchmail -v</command> (verbose mode) to see
+            exactly what's happening as it connects to your remote server and delivers mail locally.
+            This makes it much easier to spot configuration problems. Once you verify that fetchmail
+            works correctly in manual mode, you can enable it as a service to run automatically. Also
+            consider starting with longer poll intervals (15-30 minutes) and only decreasing them if
+            you need more frequent mail updates - this reduces server load and avoids potential rate
+            limiting from your mail provider.</para>
         <tip>
             <para>There is also a GUI tool <command>fetchmailconf</command> that can be used to ease
                 the creation of fetchmail configuration files. You can install this with </para>

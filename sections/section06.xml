@@ -189,6 +189,13 @@ reject_unauth_destination </programlisting>
             <para>Before moving on we should make sure that this works as we have intended. We can
                 do this in the same way as we tested the <acronym>IMAP</acronym> connection, by hand. This allows us to
                 see the core protocol level without any client getting in our way. </para>
+            <para>When you configure your mail clients later, they will handle this authentication
+                process automatically - you won't need to manually encode passwords. The client
+                will prompt you for your username and password, then use the SASL mechanism we've
+                configured here to authenticate securely. If authentication fails when you set up
+                your client, first verify that you can login successfully using these manual tests,
+                then check that your client is configured to use the correct authentication method
+                (typically "Normal password" or "PLAIN" in client settings).</para>
             <para>Unfortunately the <acronym>SMTP</acronym> protocol doesn't send the user/password combo as plain text
                 as we did in the <acronym>IMAP</acronym> protocol testing. Instead <acronym>SMTP</acronym> expects the user/password to be
                 base64 encoded together in one string. This can be manually constructed with the use

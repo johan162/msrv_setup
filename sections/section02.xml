@@ -285,6 +285,13 @@
             set of applications that can be used to create a basic mail server. Hower this
             particular combination can probably be considered one of the standards that both
             individuals larger organizations use. </para>
+        <para>While there are alternative components available (for example, using Exim instead of
+            Postfix, or Courier instead of Dovecot), the combination described in this tutorial has
+            proven reliable and is well-documented. More importantly, these components work together
+            smoothly once properly configured. If you're new to mail server administration, we
+            recommend following this guide with these specific components rather than attempting
+            substitutions, as the configuration examples and troubleshooting guidance are tailored to
+            this particular setup.</para>
         <para>In our setup we will also install a Web based mail client that will allow reading and
             manipulate of messages using any available Web browser. </para>
         <para>The mail client will be installed in the same server and talk directly to our

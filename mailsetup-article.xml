@@ -8,7 +8,7 @@
     <info>
         <title>The Complete OpenSuSE Mail Server</title>
         <subtitle>... or how  to really understand a full IMAP/SMTP/HTTPS/Webmail setup</subtitle>
-        <releaseinfo>Version 1.0.0</releaseinfo>
+        <releaseinfo>Version 1.0.2</releaseinfo>
         <author>
             <personname>Johan Persson</personname>
             <email>johan162@gmail.com</email>

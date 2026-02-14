@@ -298,6 +298,12 @@ verbose_ssl = yes</programlisting>
             this by un-commenting the line <literal>#port = 143</literal> in the
                 <acronym>IMAP</acronym> section at the top of the file. Now restart Dovecot in the
             same way as before. </para>
+        <para>At this stage, you have a working IMAP server, but you still need to complete the
+            Postfix configuration before you can send mail. Once both Dovecot and Postfix are
+            properly configured and tested, you'll be ready to configure your email clients. You'll
+            need to provide your clients with the server address or IP, port 993 for IMAP (with
+            SSL/TLS), port 587 or 25 for SMTP (with STARTTLS), your username and password, and
+            ensure SSL/TLS encryption is enabled for both incoming and outgoing mail.</para>
         <para>We can then login to dovecot using a basic telnet connection</para>
         <screen>$> telnet localhost 143
 Trying ::1…
