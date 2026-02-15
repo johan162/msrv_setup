@@ -239,6 +239,63 @@ epub: $(EPUB_DIR)
 		-c css_stylesheets/article.css \
 		$(MAIN_DOCUMENT) \
 		-o ../$(EPUB_DIR)/$(MAIN_DOCUMENT_STRIP).epub
+	@# dbtoepub doesn't include CSS-referenced images, so we need to add them manually
+	@echo "  Adding CSS images to EPUB..."
+	@mkdir -p $(TMP_DIR)/epub_extract
+	@cd $(TMP_DIR)/epub_extract && unzip -q ../../$(EPUB_DIR)/$(MAIN_DOCUMENT_STRIP).epub
+	@# Copy CSS images (png, gif, jpg) to OEBPS directory
+	@find css_stylesheets -maxdepth 1 -type f \( -name "*.png" -o -name "*.gif" -o -name "*.jpg" \) \
+		-exec cp {} $(TMP_DIR)/epub_extract/OEBPS/ \; 2>/dev/null || true
+	@# Copy figures to OEBPS directory  
+	@cp -rf $(TMP_DIR)/figures $(TMP_DIR)/epub_extract/OEBPS/ 2>/dev/null || true
+	@# Fix figure paths in HTML files (remove ../ prefix)
+	@echo "  Fixing figure paths in HTML..."
+	@for html in $(TMP_DIR)/epub_extract/OEBPS/*.html; do \
+		if [ -f "$$html" ]; then \
+			sed -i.bak 's|src="../figures/|src="figures/|g' "$$html"; \
+		fi; \
+	done
+	@rm -f $(TMP_DIR)/epub_extract/OEBPS/*.html.bak
+	@# Fix CSS image references for missing files
+	@echo "  Fixing CSS image references..."
+	@if [ -f "$(TMP_DIR)/epub_extract/OEBPS/article.css" ]; then \
+		sed -i.bak \
+			-e '/text-document\.png/d' \
+			-e 's|url("checkmark.png")|url("checkmark-green.png")|g' \
+			$(TMP_DIR)/epub_extract/OEBPS/article.css; \
+		rm -f $(TMP_DIR)/epub_extract/OEBPS/article.css.bak; \
+	fi
+	@# Add image entries to content.opf manifest
+	@echo "  Updating OPF manifest..."
+	@for img in $(TMP_DIR)/epub_extract/OEBPS/*.png $(TMP_DIR)/epub_extract/OEBPS/*.gif $(TMP_DIR)/epub_extract/OEBPS/*.jpg; do \
+		if [ -f "$$img" ]; then \
+			basename=$$(basename "$$img"); \
+			ext=$${basename##*.}; \
+			id=$$(echo "$$basename" | sed 's/[^a-zA-Z0-9]/_/g'); \
+			if ! grep -q "id=\"$$id\"" $(TMP_DIR)/epub_extract/OEBPS/content.opf 2>/dev/null; then \
+				sed -i.bak "s|</manifest>|<item id=\"$$id\" href=\"$$basename\" media-type=\"image/$$ext\"/>&|" \
+					$(TMP_DIR)/epub_extract/OEBPS/content.opf; \
+			fi; \
+		fi; \
+	done
+	@# Add figures directory images to manifest
+	@for img in $(TMP_DIR)/epub_extract/OEBPS/figures/*.png $(TMP_DIR)/epub_extract/OEBPS/figures/*.jpg; do \
+		if [ -f "$$img" ]; then \
+			basename=$$(basename "$$img"); \
+			ext=$${basename##*.}; \
+			mediatype="image/$$ext"; \
+			if [ "$$ext" = "jpg" ]; then mediatype="image/jpeg"; fi; \
+			id=$$(echo "figures_$$basename" | sed 's/[^a-zA-Z0-9]/_/g'); \
+			if ! grep -q "id=\"$$id\"" $(TMP_DIR)/epub_extract/OEBPS/content.opf 2>/dev/null; then \
+				sed -i.bak "s|</manifest>|<item id=\"$$id\" href=\"figures/$$basename\" media-type=\"$$mediatype\"/>&|" \
+					$(TMP_DIR)/epub_extract/OEBPS/content.opf; \
+			fi; \
+		fi; \
+	done
+	@rm -f $(TMP_DIR)/epub_extract/OEBPS/content.opf.bak
+	@# Re-package the EPUB with images included
+	@cd $(TMP_DIR)/epub_extract && zip -q -X -r ../$(MAIN_DOCUMENT_STRIP).epub mimetype META-INF OEBPS
+	@mv $(TMP_DIR)/$(MAIN_DOCUMENT_STRIP).epub $(EPUB_DIR)/
 	@# Clean up temporary directory
 	@rm -rf $(TMP_DIR)
 	@echo "EPUB documentation generated in $(EPUB_DIR)/$(MAIN_DOCUMENT_STRIP).epub"
