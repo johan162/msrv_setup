@@ -265,8 +265,6 @@ make validate
 make check-tools
 ```
 
-**Note on macOS**: The XSL stylesheet files use canonical DocBook URIs (e.g., `http://docbook.sourceforge.net/release/xsl/current/`) which are resolved to local files via XML catalogs. When you install DocBook XSL via Homebrew, it automatically configures the catalog at `/usr/local/etc/xml/catalog`. The `xsltproc` tool uses this catalog to map URIs to the actual installed files, making the stylesheets portable across different systems.
-
 ### Output Locations
 
 Generated documentation appears in the `output/` directory:
@@ -331,8 +329,6 @@ The documentation uses **DocBook 5** with XInclude for modularity:
 - `sections/section*.xml` - Individual sections for each component
 - `appendixes/appendix*.xml` - Detailed configuration examples
 - Custom XSL stylesheets customize the DocBook output appearance
-
-**Note**: The `mailsetup.xpr` file is an Oxygen XML Editor project file from the original development environment. It's not required for building the documentation but is preserved to show the original editing workflow. You can safely ignore it if you're not using Oxygen XML Editor.
 
 ## Historical Context
 
