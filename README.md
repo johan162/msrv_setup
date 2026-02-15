@@ -9,10 +9,8 @@
 - [The Complete OpenSuSE Mail Server](#the-complete-opensuse-mail-server)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
-  - [Quick Start](#quick-start)
-    - [Building with Docker/Podman (Recommended)](#building-with-dockerpodman-recommended)
+  - [Quick Start - Building document with Docker/Podman (Recommended)](#quick-start---building-document-with-dockerpodman-recommended)
   - [What This Document Covers](#what-this-document-covers)
-  - [The Gap This Document Filled](#the-gap-this-document-filled)
   - [Details of Components Covered](#details-of-components-covered)
     - [Core Mail Services](#core-mail-services)
     - [Filtering and Security](#filtering-and-security)
@@ -35,31 +33,13 @@
 
 ## Overview
 
-This comprehensive guide documents the complete process of setting up a production-ready mail server on OpenSuSE Linux. Unlike superficial tutorials that gloss over critical details, this document provides an exhaustive, technically rigorous explanation of every component, configuration decision, and security consideration involved in creating a modern mail infrastructure.
+This guide documents the complete process of setting up a production-ready mail server on OpenSuSE Linux. This document provides an exhaustive, technically rigorous explanation of all components, configuration decision, and security consideration involved in creating a modern mail infrastructure.
 
-The guide covers everything from basic SMTP and IMAP setup to advanced topics like SSL/TLS encryption, spam filtering, mail filtering with procmail, webmail access via Roundcube, and proper integration of all components into a cohesive system.
+The guide covers everything from basic SMTP and IMAP setup to advanced topics like SSL/TLS encryption, spam filtering, mail filtering with procmail, webmail access via Roundcube, and proper integration of all components.
 
-## Quick Start
+## Quick Start - Building document with Docker/Podman (Recommended)
 
-To build and view the documentation on macOS:
-
-```bash
-# Install dependencies
-brew install docbook-xsl
-
-# Build HTML documentation
-make html
-
-# Open in your browser
-open output/html/index.html
-
-# Or build all formats
-make all
-```
-
-### Building with Docker/Podman (Recommended)
-
-If you don't want to install dependencies on your local system, you can build all formats using Docker or Podman:
+To avoid having to install all dependencies on the local system, all supported output formats (html, pdf, ePub, markdown)can be built using Docker or Podman (assume that Docker or Podman is already installed).
 
 ```bash
 # Build the container image (one-time setup)
@@ -82,16 +62,7 @@ make docker-verify-epub
 make docker-shell
 ```
 
-The container includes all necessary dependencies:
-- Alpine Linux 3.19 (minimal base)
-- xsltproc and DocBook XSL stylesheets with proper XML catalogs
-- Apache FOP 2.9 for PDF generation
-- Ruby dbtoepub for EPUB generation
-- Pandoc 3.9 for Markdown generation
-- EPUBCheck 5.1.0 for EPUB validation
-- Liberation fonts for PDF rendering
-
-
+See [Detailed Building Instructions For All Platforms](#detailed-building-instructions-for-all-platforms) for information on local builds for Linux/MacOS/Windows
 
 ## What This Document Covers
 
@@ -112,17 +83,6 @@ The tutorial walks through setting up a complete mail server stack consisting of
 13. **Firewall Configuration and Network Security** - Port requirements, firewall setup (SuSEfirewall2/firewalld), Fail2ban, and security hardening
 
 The document also includes 8 comprehensive appendices with complete configuration file examples, troubleshooting guides, and quick reference materials for Postfix, Procmail, Dovecot, OpenSSL, and Apache.
-
-## The Gap This Document Filled
-
-Most mail server tutorials suffer from one or more problems:
-- They perpetuate outdated practices from older tutorials
-- They use deprecated configuration options that "work" but aren't optimal
-- They skip critical security considerations
-- They don't explain *why* certain configurations are necessary
-- They assume too much prior knowledge or skip too many details
-
-This guide aims to provide a *correct* and a *modern* (for its time) explanation with thorough reasoning for every configuration choice.
 
 ## Details of Components Covered
 
@@ -335,7 +295,6 @@ The documentation uses **DocBook 5** with XInclude for modularity:
 ### When This Was Written (2010-2012)
 
 This guide was created during an era when:
-- OpenSuSE was actively developed by Novell
 - Dovecot 2.x was relatively new
 - SSL/TLS was transitioning from SSL 3.0 to TLS 1.0/1.1
 - Self-signed certificates were more commonly used
