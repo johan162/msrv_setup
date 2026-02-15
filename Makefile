@@ -134,6 +134,10 @@ html: $(HTML_DIR)
 		--output $(HTML_DIR)/index.html \
 		$(XSL_DIR)/html.xsl \
 		$(MAIN_DOCUMENT)
+	@# Fix figure paths (remove ../ prefix)
+	@echo "  Fixing figure paths..."
+	@sed -i.bak 's|src="../figures/|src="figures/|g' $(HTML_DIR)/index.html
+	@rm -f $(HTML_DIR)/index.html.bak
 	@# Optionally tidy HTML (ignore errors)
 	@-$(TIDY) -m -utf8 $(HTML_DIR)/index.html 2>/dev/null || true
 	@echo "HTML documentation generated in $(HTML_DIR)/index.html"
@@ -160,6 +164,10 @@ htmlfancy: $(HTML_DIR)
 		--output $(HTML_DIR)/index.html \
 		$(XSL_DIR)/html.fancycmd.xsl \
 		$(MAIN_DOCUMENT)
+	@# Fix figure paths (remove ../ prefix)
+	@echo "  Fixing figure paths..."
+	@sed -i.bak 's|src="../figures/|src="figures/|g' $(HTML_DIR)/index.html
+	@rm -f $(HTML_DIR)/index.html.bak
 	@# Optionally tidy HTML (ignore errors)
 	@-$(TIDY) -m -utf8 $(HTML_DIR)/index.html 2>/dev/null || true
 	@echo "HTML documentation with fancy styling generated in $(HTML_DIR)/index.html"
@@ -186,6 +194,14 @@ chunk: $(CHUNK_DIR)
 		--stringparam base.dir $(CHUNK_DIR)/ \
 		$(XSL_DIR)/chunk.xsl \
 		$(MAIN_DOCUMENT)
+	@# Fix figure paths (remove ../ prefix)
+	@echo "  Fixing figure paths..."
+	@for html in $(CHUNK_DIR)/*.html; do \
+		if [ -f "$$html" ]; then \
+			sed -i.bak 's|src="../figures/|src="figures/|g' "$$html"; \
+		fi; \
+	done
+	@rm -f $(CHUNK_DIR)/*.html.bak
 	@echo "Chunked HTML documentation generated in $(CHUNK_DIR)/"
 
 # Generate PDF

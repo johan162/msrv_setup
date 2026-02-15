@@ -3,12 +3,11 @@
 <article xmlns="http://docbook.org/ns/docbook"
         xmlns:xi="http://www.w3.org/2001/XInclude"
         xmlns:xlink="http://www.w3.org/1999/xlink" 
-        version="5.0" 
-        revision="$Id: mailsetup-article.xml 43 2012-01-16 21:45:57Z ljp $">
+        version="5.0">
     <info>
         <title>The Complete OpenSuSE Mail Server</title>
         <subtitle>... or how  to really understand a full IMAP/SMTP/HTTPS/Webmail setup</subtitle>
-        <releaseinfo>Version 1.0.2</releaseinfo>
+        <releaseinfo>Version 1.0.4</releaseinfo>
         <author>
             <personname>Johan Persson</personname>
             <email>johan162@gmail.com</email>
